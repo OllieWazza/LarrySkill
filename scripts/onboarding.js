@@ -19,7 +19,7 @@ const args = process.argv.slice(2);
 const configPath = args.includes('--config') ? args[args.indexOf('--config') + 1] : null;
 const validate = args.includes('--validate');
 
-const REFERRAL_LINK = 'https://affiliate.postiz.com/ollie-warren';
+const REFERRAL_LINK = 'https://affiliate.postiz.com/oliverhenry';
 
 if (validate && configPath) {
   // Validate existing config
