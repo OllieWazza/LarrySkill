@@ -31,15 +31,24 @@ Store everything in `tiktok-marketing/app-profile.json`. The more detail here, t
 
 ### Step 2: Image/Video Generation
 
-Ask: **"What do you want to use for image or video generation?"**
+Ask: **"What do you want to use for image generation?"**
 
-Options to suggest:
-- **OpenAI gpt-image-1.5** (recommended for slideshows — high quality portraits)
-- **Midjourney** (via API if available)
-- **Stable Diffusion** (local or API)
-- **Other** (let them specify)
+Supported providers:
+- **OpenAI** — `gpt-image-1.5` (recommended, best quality for realistic photos) or `dall-e-3`
+- **Stability AI** — Stable Diffusion XL and newer models via API
+- **Replicate** — any model (Flux, SDXL, etc.) via Replicate API
+- **Local** — user provides their own pre-made images (no generation)
 
-Then ask for their API key for whichever they choose. Store in config.
+Then ask for their API key for whichever they choose. The generate script handles all providers automatically.
+
+Store in config as:
+```json
+"imageGen": {
+  "provider": "openai|stability|replicate|local",
+  "apiKey": "their-key",
+  "model": "gpt-image-1.5"
+}
+```
 
 ### Step 3: Postiz Setup
 
@@ -124,11 +133,13 @@ Use `scripts/generate-slides.js`:
 node scripts/generate-slides.js --config tiktok-marketing/config.json --output tiktok-marketing/posts/YYYY-MM-DD-HHmm/ --prompts prompts.json
 ```
 
-**Critical image rules:**
-- ALWAYS `1024x1536` (portrait 9:16) — fills TikTok screen
-- Include "iPhone photo" and "realistic lighting" in prompts
+The script auto-routes to the correct provider based on `config.imageGen.provider`. Supports OpenAI, Stability AI, Replicate, or local images.
+
+**Critical image rules (all providers):**
+- ALWAYS portrait aspect ratio (1024x1536 or 9:16 equivalent) — fills TikTok screen
+- Include "iPhone photo" and "realistic lighting" in prompts (for AI providers)
 - ALL 6 slides share the EXACT same base description (only style/feature changes)
-- Lock architecture: window count, camera angle, dimensions, furniture positions
+- Lock key elements across all slides (architecture, face shape, camera angle)
 - See [references/slide-structure.md](references/slide-structure.md) for the 6-slide formula
 
 ### 2. Add Text Overlays
