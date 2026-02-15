@@ -62,12 +62,15 @@ Replace [room] and [style] with user's app focus:
 Write ONE base description, reuse across all 6 slides:
 
 ```
+[For AI image gen providers:]
 iPhone photo of a [CONTEXT]. [DETAILED DESCRIPTION OF SUBJECT].
 Shot from [CAMERA POSITION]. [SPECIFIC ARCHITECTURAL/PHYSICAL DETAILS].
 Natural phone camera quality, realistic lighting. Portrait orientation.
 
 [SLIDE-SPECIFIC STYLE CHANGES ONLY]
 ```
+
+Adapt prompt style to your image gen provider — the key principles (same subject, same angle, different styles) apply regardless of which tool generates the images.
 
 ### What to Lock (same across all 6):
 - Subject dimensions/features

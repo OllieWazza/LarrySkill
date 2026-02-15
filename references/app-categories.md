@@ -4,12 +4,12 @@
 
 **Slide concept:** Same room, same angle, different interior styles.
 
-**Base prompt template:**
+**Base prompt template (adapt wording for your image gen provider):**
 ```
-iPhone photo of a [STYLE] [room type] in a small UK flat. [Room dimensions].
+Realistic photo of a [STYLE] [room type] in a small flat. [Room dimensions].
 Shot from [position]. [Window details]. [Door details]. [Key furniture with exact
-positions]. [Floor type]. [Ceiling details]. Natural phone camera quality, 
-realistic lighting. Portrait orientation.
+positions]. [Floor type]. [Ceiling details]. Natural lighting, phone camera quality.
+Portrait orientation.
 ```
 
 **"Before" rules:**
@@ -30,7 +30,7 @@ realistic lighting. Portrait orientation.
 ```
 Close-up portrait photo of a young woman, [age], [ethnicity], [features],
 [hair], [makeup level]. [Expression], looking directly at camera. Natural 
-indoor lighting from window to the left. Plain wall background. iPhone selfie 
+indoor lighting from window to the left. Plain wall background. Phone selfie 
 quality, natural skin texture with visible pores. Portrait orientation.
 ```
 

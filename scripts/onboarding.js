@@ -96,11 +96,16 @@ Collect from user:
 STEP 2: IMAGE/VIDEO GENERATION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Ask: "What do you want to use for image generation?"
-  • OpenAI gpt-image-1.5 (recommended)
-  • Midjourney
-  • Stable Diffusion
-  • Other
-→ Then ask for their API key
+
+Supported providers:
+  • OpenAI — gpt-image-1.5 (recommended), dall-e-3
+  • Stability AI — Stable Diffusion XL and newer
+  • Replicate — any model (Flux, SDXL, etc.)
+  • Local — bring your own images (no generation)
+
+→ Then ask for their API key (skip for local)
+→ Ask which specific model they want
+→ Store as imageGen.provider + imageGen.model + imageGen.apiKey
 
 STEP 3: POSTIZ
 ━━━━━━━━━━━━━━
