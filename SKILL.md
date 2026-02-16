@@ -373,36 +373,45 @@ The script auto-routes to the correct provider based on `config.imageGen.provide
 - Lock key elements across all slides (architecture, face shape, camera angle)
 - See [references/slide-structure.md](references/slide-structure.md) for the 6-slide formula
 
-### 2. Add Text Overlays
+### 2. Add Text Overlays (Using OpenClaw Canvas Tool)
 
-**Use the OpenClaw `canvas` tool** to render text overlays. This is the recommended method — it works on every OpenClaw agent with zero dependencies. Render an HTML/CSS overlay on top of each slide image.
+**Use the OpenClaw `canvas` tool.** This is how we do it — it works on every OpenClaw agent with zero dependencies, gives you full CSS control, and lets you preview before committing.
 
-**How to use the canvas tool for overlays:**
+**DO NOT use the `scripts/add-text-overlay.js` script** unless the canvas tool is unavailable. The script requires `npm install canvas` with native C dependencies (cairo, pango) which many systems can't install. The canvas tool just works.
 
-1. For each slide, present a canvas with the slide image as background and HTML text overlay:
+#### Step-by-Step Process
 
-```javascript
-// Example: use canvas tool to render overlay
-// 1. Present canvas with HTML containing the background image + text
-// 2. Snapshot the canvas to get the final composited image
-// 3. Save the result
-```
+**For each slide (1-6):**
 
-The agent should build an HTML page for each slide that:
-- Sets the slide image as a full-bleed background (`background-image`, `background-size: cover`)
-- Overlays styled text using CSS (much more control than any script)
-- Snapshots the canvas to produce the final image
+1. **Build an HTML page** with the raw slide image as background and your text overlay
+2. **Present the canvas** using the `canvas` tool with the HTML
+3. **Snapshot the canvas** to capture the composited image (image + text baked together)
+4. **Review the result** — does the text look right? Right size? Right position? Readable?
+5. **Adjust if needed** — tweak font size, position, line breaks, then re-present and re-snapshot
+6. **Save the final image** — this is your finished slide ready for posting
 
-**Example HTML for a slide overlay:**
+#### Exact HTML Template (Copy This)
+
 ```html
-<div style="
-  width: 1024px;
-  height: 1536px;
-  background-image: url('file:///path/to/slide1_raw.png');
-  background-size: cover;
-  position: relative;
-">
-  <div style="
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  * { margin: 0; padding: 0; }
+  body {
+    width: 1024px;
+    height: 1536px;
+    overflow: hidden;
+  }
+  .slide {
+    width: 1024px;
+    height: 1536px;
+    background-image: url('file:///absolute/path/to/slide1_raw.png');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+  }
+  .text-overlay {
     position: absolute;
     top: 25%;
     left: 50%;
@@ -414,35 +423,92 @@ The agent should build an HTML page for each slide that:
     font-size: 66px;
     color: white;
     text-shadow:
-      -3px -3px 0 #000, 3px -3px 0 #000,
-      -3px 3px 0 #000, 3px 3px 0 #000,
-      0 0 8px rgba(0,0,0,0.5);
-    line-height: 1.25;
-  ">
-    I showed my landlord<br>
-    what AI thinks our<br>
-    kitchen should look like
+      -3px -3px 0 #000,
+       3px -3px 0 #000,
+      -3px  3px 0 #000,
+       3px  3px 0 #000,
+       0 0 8px rgba(0,0,0,0.5);
+    line-height: 1.3;
+  }
+</style>
+</head>
+<body>
+  <div class="slide">
+    <div class="text-overlay">
+      I showed my landlord<br>
+      what AI thinks our<br>
+      kitchen should look like
+    </div>
   </div>
-</div>
+</body>
+</html>
 ```
 
-Then snapshot the canvas to save as the final slide image.
+#### Canvas Tool Commands
 
-**Why canvas over a script:**
-- Zero npm dependencies — works on every OpenClaw agent immediately
-- Full CSS control — shadows, gradients, multiple font sizes, emphasis words
-- Easy to preview before committing — present the canvas, check it looks right, adjust
-- Can use **bold/italic/color on individual words** (e.g. "ABSOLUMENT" in caps, different size)
+```
+// 1. Present the canvas with your HTML
+canvas present --url file:///path/to/slide1_overlay.html --width 1024 --height 1536
 
-**Fallback:** If the canvas tool is unavailable, `scripts/add-text-overlay.js` works but requires `npm install canvas` (which needs native cairo/pango libs).
+// 2. Snapshot to capture the result
+canvas snapshot --outputFormat png
+// This gives you the composited image (background + text baked together)
 
-**Text overlay spec (same rules regardless of method):**
-- **Font size:** ~6.5% of image width (~66px on 1024w)
+// 3. Review — does it look good? If not, edit the HTML and re-present
+```
+
+#### Text Sizing Guide
+
+The font size depends on how much text you have per slide. These are proven sizes:
+
+| Text length | Font size | Example |
+|-------------|-----------|---------|
+| Short (3-5 words) | 72-80px | "Wait... is this real??" |
+| Medium (6-12 words) | 60-66px | "I showed my landlord\nwhat AI thinks" |
+| Long (13+ words) | 48-54px | "My boyfriend said our flat\nlooks like a prison cell\nso I showed him this" |
+
+**The agent should adjust font size per slide based on text length.** This is a huge advantage over the script — each slide can have different sizing.
+
+#### Line Break Rules
+
+- **Use `<br>` tags** in the HTML for manual line breaks
+- **4-6 words per line MAX** — short lines are scannable at a glance
+- **Read it aloud** — each line should feel like a natural pause
+- **3-4 lines per slide is ideal**
+- **NEVER put all text on one line** — it either gets tiny or overflows
+
+**Good:**
+```html
+I showed my landlord<br>
+what AI thinks our<br>
+kitchen should look like
+```
+
+**Bad:**
+```html
+I showed my landlord what AI thinks our kitchen should look like
+```
+
+#### Why Canvas Tool Over Scripts
+
+- **Zero dependencies** — works on every OpenClaw agent immediately
+- **Preview before saving** — see exactly what it looks like, adjust in real-time
+- **Per-slide control** — different font sizes, emphasis, styling per slide
+- **CSS power** — shadows, gradients, bold/italic on individual words, ALL CAPS for emphasis
+- **No squashing** — CSS word-wrap handles long text naturally, no `maxWidth` compression
+
+#### Text Style Spec
+
+- **Font:** Bold Arial/Helvetica (sans-serif)
+- **Color:** White (`#FFFFFF`)
+- **Outline:** Thick black text-shadow (the CSS above creates a solid outline effect)
 - **Position:** Centered horizontally, ~25-30% from top
-- **Style:** White fill with thick black outline/shadow
-- **Max width:** 75% of image (padding both sides for TikTok UI)
+- **Max width:** 75% of image width (stays clear of TikTok UI on both sides)
 - **Safe zones:** No text in bottom 20% (TikTok controls) or top 10% (status bar)
 - **Content:** Text must be REACTIONS not labels ("Wait... this is actually nice??" not "Modern minimalist")
+- **No emoji** in overlay text (rendering is inconsistent)
+
+**Fallback only:** If canvas tool is unavailable, `scripts/add-text-overlay.js` works but requires `npm install canvas` (native cairo/pango dependencies).
 
 **⚠️ LINE BREAKS ARE CRITICAL — Read This:**
 
