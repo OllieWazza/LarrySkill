@@ -2,12 +2,12 @@
 /**
  * Daily Marketing Report
  * 
- * Cross-references TikTok post analytics (via Postiz) with RevenueCat conversions
+ * Cross-references TikTok post analytics (via Postiz CLI) with RevenueCat conversions
  * to identify which hooks drive views AND revenue.
  * 
  * Data sources:
- * 1. Postiz API → per-post TikTok analytics (views, likes, comments, shares)
- * 2. Postiz API → platform-level stats (followers, total views) for delta tracking
+ * 1. Postiz CLI → per-post TikTok analytics (views, likes, comments, shares)
+ * 2. Postiz CLI → platform-level stats (followers, total views) for delta tracking
  * 3. RevenueCat API (optional) → trials, conversions, revenue
  * 
  * The diagnostic framework:
@@ -22,6 +22,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { runPostiz } = require('./postiz-cli');
 
 const args = process.argv.slice(2);
 function getArg(name) {
@@ -39,13 +40,20 @@ if (!configPath) {
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 const baseDir = path.dirname(configPath);
-const POSTIZ_URL = 'https://api.postiz.com/public/v1';
 
-async function postizAPI(endpoint) {
-  const res = await fetch(`${POSTIZ_URL}${endpoint}`, {
-    headers: { 'Authorization': config.postiz.apiKey }
-  });
-  return res.json();
+async function listPosts(startDate, endDate) {
+  return runPostiz(
+    ['posts:list', '--startDate', startDate.toISOString(), '--endDate', endDate.toISOString()],
+    config
+  );
+}
+
+async function getPostAnalytics(postId) {
+  return runPostiz(['analytics:post', postId, '--date', String(days)], config);
+}
+
+async function getPlatformAnalytics(integrationId) {
+  return runPostiz(['analytics:platform', integrationId, '--date', String(days)], config);
 }
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -130,7 +138,7 @@ function savePlatformStats(stats) {
   // ==========================================
   // 1. POSTIZ: Per-post analytics
   // ==========================================
-  const postsData = await postizAPI(`/posts?startDate=${startDate.toISOString()}&endDate=${now.toISOString()}`);
+  const postsData = await listPosts(startDate, now);
   let posts = (postsData.posts || []).filter(p => 
     p.integration?.providerIdentifier === 'tiktok' &&
     p.releaseId && p.releaseId !== 'missing'
@@ -141,7 +149,7 @@ function savePlatformStats(stats) {
 
   const postResults = [];
   for (const post of posts) {
-    const analytics = await postizAPI(`/analytics/post/${post.id}`);
+    const analytics = await getPostAnalytics(post.id);
     const metrics = {};
     if (Array.isArray(analytics)) {
       analytics.forEach(m => {
@@ -167,7 +175,7 @@ function savePlatformStats(stats) {
   // ==========================================
   const platformStats = {};
   for (const [platform, intId] of Object.entries(config.postiz?.integrationIds || {})) {
-    const stats = await postizAPI(`/analytics/${intId}`);
+    const stats = await getPlatformAnalytics(intId);
     if (Array.isArray(stats)) {
       platformStats[platform] = {};
       stats.forEach(m => {

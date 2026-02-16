@@ -1,6 +1,6 @@
 ---
 name: tiktok-app-marketing
-description: Automate TikTok slideshow marketing for any app or product. Researches competitors, generates AI images, adds text overlays, posts via Postiz, tracks analytics, and iterates on what works. Use when setting up TikTok marketing automation, creating slideshow posts, analyzing post performance, optimizing app marketing funnels, or when a user mentions TikTok growth, slideshow ads, or social media marketing for their app. Covers competitor research (browser-based), image generation, text overlays, TikTok posting (Postiz API), cross-posting to Instagram/YouTube/Threads, analytics tracking, hook testing, CTA optimization, conversion tracking with RevenueCat, and a full feedback loop that adjusts hooks and CTAs based on views vs conversions.
+description: Automate TikTok slideshow marketing for any app or product. Researches competitors, generates AI images, adds text overlays, posts via Postiz, tracks analytics, and iterates on what works. Use when setting up TikTok marketing automation, creating slideshow posts, analyzing post performance, optimizing app marketing funnels, or when a user mentions TikTok growth, slideshow ads, or social media marketing for their app. Covers competitor research (browser-based), image generation, text overlays, TikTok posting (Postiz CLI), cross-posting to Instagram/YouTube/Threads, analytics tracking, hook testing, CTA optimization, conversion tracking with RevenueCat, and a full feedback loop that adjusts hooks and CTAs based on views vs conversions.
 ---
 
 # TikTok App Marketing
@@ -16,7 +16,7 @@ This skill does NOT bundle any dependencies. Your AI agent will need to research
 ### Required
 - **Node.js** (v18+) — all scripts run on Node. Your agent should verify this is installed and install it if not.
 - **node-canvas** (`npm install canvas`) — used for adding text overlays to slide images. This is a native module that may need build tools (Python, make, C++ compiler) on some systems. Your agent should research the install requirements for your OS.
-- **Postiz** — this is the backbone of the whole system. Postiz handles posting to TikTok (and 28+ other platforms), but more importantly, it provides the **analytics API** that powers the daily feedback loop. Without Postiz, the agent can post but can't track what's working — and the feedback loop is what makes this skill actually grow your account instead of just posting blindly. Sign up at [postiz.pro/oliverhenry](https://postiz.pro/oliverhenry).
+- **Postiz + official CLI (`postiz`)** — this is the backbone of the whole system. Postiz handles posting to TikTok (and 28+ other platforms), and the official CLI gives one interface for both hosted and self-hosted Postiz via `POSTIZ_API_URL`. This powers the daily feedback loop. Without Postiz, the agent can post but can't track what's working — and the feedback loop is what makes this skill actually grow your account instead of just posting blindly. Sign up at [postiz.pro/oliverhenry](https://postiz.pro/oliverhenry).
 
 ### Image Generation (pick one)
 You choose what generates your images. Your agent should research the API docs for whichever you pick:
@@ -205,7 +205,7 @@ No text, no watermarks, no logos.
 ### Phase 4: Postiz Setup (ESSENTIAL — Powers the Entire Feedback Loop)
 
 Postiz isn't just a posting tool — it's what makes the whole feedback loop work. Without it, you're posting blind. With it, you get:
-- **Automated posting** to TikTok (and 28+ other platforms) via API
+- **Automated posting** to TikTok (and 28+ other platforms) via the official CLI
 - **Per-post analytics** — views, likes, comments, shares for every post
 - **Platform analytics** — follower growth, total engagement over time
 - **Cross-posting** — same content to Instagram, YouTube, Threads simultaneously
@@ -223,14 +223,23 @@ Walk them through connecting step by step:
 1. **Sign up at [postiz.pro/oliverhenry](https://postiz.pro/oliverhenry)** — create an account
 2. **Connect TikTok** — this is the main one. Go to Integrations → Add TikTok → Authorize
 3. **Note the TikTok integration ID** — you'll see it in the URL or integration settings. I need this to post and pull analytics
-4. **Get the API key** — Settings → API → copy the key. This is how I talk to Postiz programmatically
-5. **(Optional but recommended)** Connect Instagram, YouTube Shorts, Threads for cross-posting — same content, different algorithms, more reach for free
+4. **Install Postiz CLI** — `npm i -g postiz` (or use `npx --yes postiz`)
+5. **Get the API key** — Settings → API → copy the key. This is what the CLI uses for auth
+6. **If self-hosted:** set `postiz.apiUrl` in config to your instance base URL (example: `https://postiz.yourdomain.com`)
+7. **(Optional but recommended)** Connect Instagram, YouTube Shorts, Threads for cross-posting — same content, different algorithms, more reach for free
 
 Explain the draft workflow:
 
 > "One important thing — posts go to your TikTok inbox as drafts, not straight to your feed. Before you publish each one, add a trending sound from TikTok's sound library. Music is the single biggest factor in TikTok reach — silent slideshows get buried. It takes 30 seconds per post and makes a massive difference. This workflow helped us hit over 1 million TikTok views."
 
-**Don't move on until Postiz is connected and the API key works.** Test it by hitting the platform analytics endpoint. If it returns data, you're good.
+**Don't move on until Postiz is connected and the CLI works.** Test it with:
+```bash
+POSTIZ_API_KEY=your-key postiz integrations:list
+```
+If self-hosted, also set:
+```bash
+POSTIZ_API_URL=https://postiz.yourdomain.com
+```
 
 ### Phase 5: Conversion Tracking (THE Intelligence Loop)
 
@@ -355,6 +364,7 @@ Store everything in `tiktok-marketing/config.json` (this is the source of truth 
   },
   "postiz": {
     "apiKey": "your-postiz-key",
+    "apiUrl": "https://postiz.yourdomain.com",
     "integrationIds": {
       "tiktok": "id-here",
       "instagram": "id-here-optional",
@@ -634,10 +644,10 @@ node scripts/check-analytics.js --config tiktok-marketing/config.json --days 3 -
 The script:
 1. Fetches all Postiz posts from the last N days
 2. Skips posts published less than 2 hours ago (indexing delay)
-3. For unconnected posts, calls `GET /posts/{id}/missing` to get all TikTok videos on the account
+3. For unconnected posts, runs `postiz posts:missing {id}` to get all TikTok videos on the account
 4. Matches posts to videos chronologically (TikTok IDs are sequential: higher number = newer video)
 5. Excludes already-connected video IDs to avoid duplicates
-6. Connects each post via `PUT /posts/{id}/release-id`
+6. Connects each post via `postiz posts:connect {id} --release-id ...`
 7. Pulls per-post analytics (views, likes, comments, shares)
 
 **How the matching works:**
@@ -648,16 +658,16 @@ The script:
 - This is reliable because both Postiz and TikTok maintain chronological order
 
 **Manual connection (if needed):**
-1. `GET /posts/{id}/missing` — returns all TikTok videos with thumbnail URLs
+1. `postiz posts:missing {id}` — returns all TikTok videos with thumbnail URLs
 2. Identify the correct video by thumbnail or timing
-3. `PUT /posts/{id}/release-id` with `{"releaseId": "tiktok-video-id"}`
-4. `GET /analytics/post/{id}` now returns views/likes/comments/shares
+3. `postiz posts:connect {id} --release-id "tiktok-video-id"`
+4. `postiz analytics:post {id}` now returns views/likes/comments/shares
 
 **The daily cron handles all of this automatically.** It runs in the morning, checks posts from the last 3 days (all well past the 2-hour indexing window), connects any unconnected posts, and generates the report.
 
 ### ⚠️ Known Issue: Release ID Cannot Be Overwritten
 
-Once a Postiz post is connected to a TikTok video ID via `PUT /posts/{id}/release-id`, **it cannot be changed**. If you connect the wrong video, the analytics will permanently show the wrong video's stats for that post. The PUT endpoint appears to accept the update but silently keeps the original ID.
+Once a Postiz post is connected to a TikTok video ID via `postiz posts:connect`, **it cannot be changed**. If you connect the wrong video, the analytics will permanently show the wrong video's stats for that post. The update call appears to accept overwrites but silently keeps the original ID.
 
 **This is why the 2-hour wait is non-negotiable.** If you connect too early (before TikTok has indexed the new video), the `missing` endpoint will show older videos and you'll connect the wrong one. There is no undo.
 
@@ -668,7 +678,7 @@ Once a Postiz post is connected to a TikTok video ID via `PUT /posts/{id}/releas
 4. Always verify: the number of unconnected Postiz posts should match the number of new TikTok video IDs since the last connection run
 5. If something looks wrong, ask the user to confirm by checking the video thumbnail
 
-See [references/analytics-loop.md](references/analytics-loop.md) for full Postiz analytics API docs.
+See [references/analytics-loop.md](references/analytics-loop.md) for Postiz CLI command mappings and analytics details.
 
 ---
 

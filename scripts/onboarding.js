@@ -51,6 +51,7 @@ if (init) {
     },
     postiz: {
       apiKey: '',
+      apiUrl: '',
       integrationIds: {
         tiktok: ''
       }
@@ -142,7 +143,7 @@ if (validate && configPath) {
   }
 
   // Postiz (required)
-  if (!config.postiz?.apiKey) required.push('postiz.apiKey — Postiz API key');
+  if (!config.postiz?.apiKey) required.push('postiz.apiKey — Postiz API key (used by Postiz CLI)');
   if (!config.postiz?.integrationIds?.tiktok) required.push('postiz.integrationIds.tiktok — TikTok integration ID');
 
   // Competitor research (important but not blocking)
@@ -196,6 +197,7 @@ if (validate && configPath) {
   console.log(`   Category: ${config.app?.category || '(not set)'}`);
   console.log(`   Image Gen: ${config.imageGen?.provider || '(not set)'}${config.imageGen?.model ? ` (${config.imageGen.model})` : ''}`);
   console.log(`   TikTok: ${config.postiz?.integrationIds?.tiktok ? 'Connected' : 'Not connected'}`);
+  if (config.postiz?.apiUrl) console.log(`   Postiz API URL: ${config.postiz.apiUrl}`);
 
   const crossPost = Object.keys(config.postiz?.integrationIds || {}).filter(k => k !== 'tiktok' && config.postiz.integrationIds[k]);
   if (crossPost.length > 0) console.log(`   Cross-posting: ${crossPost.join(', ')}`);
