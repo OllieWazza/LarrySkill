@@ -9,6 +9,13 @@ Automate your entire TikTok slideshow marketing pipeline: generate → overlay �
 
 **Proven results:** 300K+ views in 48 hours, 100+ paying subscribers from TikTok alone.
 
+## Prerequisites
+
+- **Node.js** (v18+)
+- **node-canvas** — `npm install canvas` — used for text overlays on slide images. May require native build tools on some systems (see [node-canvas install guide](https://github.com/Automattic/node-canvas#compiling))
+- An image generation API key (OpenAI, Stability AI, Replicate, or bring your own images)
+- A Postiz account for TikTok posting
+
 ## First Run — Onboarding
 
 When this skill is first loaded, IMMEDIATELY start the onboarding flow. Do not wait for the user to ask. Run `scripts/onboarding.js` to guide the setup, or follow this flow conversationally:
@@ -150,7 +157,16 @@ Use `scripts/add-text-overlay.js`:
 node scripts/add-text-overlay.js --input tiktok-marketing/posts/YYYY-MM-DD-HHmm/ --texts texts.json
 ```
 
-**Rules:** 6.5% font size, centered, 30% from top, white text black outline, max 75% width, 4-6 words per line, text must be REACTIONS not labels.
+Uses `node-canvas` to render text directly onto slide images. All dimensions are relative to image size so they work at any resolution.
+
+**Text overlay spec:**
+- **Font size:** 6.5% of image width (~66px on 1024w)
+- **Position:** Centered horizontally, 30% from top
+- **Style:** White fill (`#FFFFFF`) with thick black outline (15% of font size)
+- **Max width:** 75% of image (padding both sides for TikTok UI)
+- **Line breaks:** Manual `\n` — keep lines to 4-6 words, never let canvas squash text
+- **Safe zones:** No text in bottom 20% (TikTok controls) or top 10% (status bar)
+- **Content:** Text must be REACTIONS not labels ("Wait... this is actually nice??" not "Modern minimalist")
 
 ### 3. Post to TikTok
 
