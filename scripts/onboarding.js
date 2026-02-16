@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 /**
- * TikTok App Marketing — Onboarding Script
+ * TikTok App Marketing — Onboarding Config Validator
  * 
- * This script is a reference for the onboarding flow. In practice, the agent
- * runs this conversationally, but this documents the exact steps and validates
- * the config at the end.
+ * The onboarding is CONVERSATIONAL — the agent talks to the user naturally,
+ * not through this script. This script validates the resulting config is complete.
  * 
- * Usage: node onboarding.js --config tiktok-marketing/config.json --validate
+ * Usage: 
+ *   node onboarding.js --validate --config tiktok-marketing/config.json
+ *   node onboarding.js --init --dir tiktok-marketing/
  * 
- * With --validate: checks an existing config is complete
- * Without: prints the onboarding checklist
+ * --validate: Check config completeness, show what's missing
+ * --init: Create the directory structure and empty config files
  */
 
 const fs = require('fs');
@@ -18,121 +19,195 @@ const path = require('path');
 const args = process.argv.slice(2);
 const configPath = args.includes('--config') ? args[args.indexOf('--config') + 1] : null;
 const validate = args.includes('--validate');
+const init = args.includes('--init');
+const dir = args.includes('--dir') ? args[args.indexOf('--dir') + 1] : 'tiktok-marketing';
 
-const REFERRAL_LINK = 'https://postiz.pro/oliverhenry';
+if (init) {
+  // Create directory structure
+  const dirs = [dir, `${dir}/posts`, `${dir}/hooks`];
+  dirs.forEach(d => {
+    if (!fs.existsSync(d)) {
+      fs.mkdirSync(d, { recursive: true });
+      console.log(`📁 Created ${d}/`);
+    }
+  });
+
+  // Empty config template
+  const configTemplate = {
+    app: {
+      name: '',
+      description: '',
+      audience: '',
+      problem: '',
+      differentiator: '',
+      appStoreUrl: '',
+      category: '',
+      isMobileApp: false
+    },
+    imageGen: {
+      provider: '',
+      apiKey: '',
+      model: ''
+    },
+    postiz: {
+      apiKey: '',
+      integrationIds: {
+        tiktok: ''
+      }
+    },
+    revenuecat: {
+      enabled: false,
+      v2SecretKey: '',
+      projectId: ''
+    },
+    posting: {
+      privacyLevel: 'SELF_ONLY',
+      schedule: ['07:30', '16:30', '21:00'],
+      crossPost: []
+    },
+    competitors: `${dir}/competitor-research.json`,
+    strategy: `${dir}/strategy.json`
+  };
+
+  const cfgPath = `${dir}/config.json`;
+  if (!fs.existsSync(cfgPath)) {
+    fs.writeFileSync(cfgPath, JSON.stringify(configTemplate, null, 2));
+    console.log(`📝 Created ${cfgPath}`);
+  }
+
+  // Empty competitor research template
+  const compPath = `${dir}/competitor-research.json`;
+  if (!fs.existsSync(compPath)) {
+    fs.writeFileSync(compPath, JSON.stringify({
+      researchDate: '',
+      competitors: [],
+      nicheInsights: {
+        trendingSounds: [],
+        commonFormats: [],
+        gapOpportunities: '',
+        avoidPatterns: ''
+      }
+    }, null, 2));
+    console.log(`📝 Created ${compPath}`);
+  }
+
+  // Empty strategy template
+  const stratPath = `${dir}/strategy.json`;
+  if (!fs.existsSync(stratPath)) {
+    fs.writeFileSync(stratPath, JSON.stringify({
+      hooks: [],
+      postingSchedule: ['07:30', '16:30', '21:00'],
+      hookCategories: { testing: [], proven: [], dropped: [] },
+      crossPostPlatforms: [],
+      notes: ''
+    }, null, 2));
+    console.log(`📝 Created ${stratPath}`);
+  }
+
+  // Empty hook performance tracker
+  const hookPath = `${dir}/hook-performance.json`;
+  if (!fs.existsSync(hookPath)) {
+    fs.writeFileSync(hookPath, JSON.stringify({
+      hooks: [],
+      rules: { doubleDown: [], testing: [], dropped: [] }
+    }, null, 2));
+    console.log(`📝 Created ${hookPath}`);
+  }
+
+  console.log('\n✅ Directory structure ready. Start the conversational onboarding to fill in config.');
+  process.exit(0);
+}
 
 if (validate && configPath) {
-  // Validate existing config
   if (!fs.existsSync(configPath)) {
     console.error(`❌ Config not found: ${configPath}`);
     process.exit(1);
   }
-  
+
   const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-  const issues = [];
-  
-  // App profile
-  if (!config.app?.name) issues.push('Missing: app.name');
-  if (!config.app?.description) issues.push('Missing: app.description');
-  if (!config.app?.audience) issues.push('Missing: app.audience');
-  if (!config.app?.problem) issues.push('Missing: app.problem');
-  if (!config.app?.category) issues.push('Missing: app.category');
-  
-  // Image generation
-  if (!config.imageGen?.provider) issues.push('Missing: imageGen.provider');
-  if (!config.imageGen?.apiKey) issues.push('Missing: imageGen.apiKey');
-  
-  // Postiz
-  if (!config.postiz?.apiKey) issues.push('Missing: postiz.apiKey');
-  if (!config.postiz?.integrationIds?.tiktok) issues.push('Missing: postiz.integrationIds.tiktok');
-  
-  if (issues.length === 0) {
-    console.log('✅ Config is complete! Ready to start posting.');
-    
-    // Summary
-    console.log('\n📋 Setup Summary:');
-    console.log(`   App: ${config.app.name}`);
-    console.log(`   Category: ${config.app.category}`);
-    console.log(`   Image Gen: ${config.imageGen.provider} (${config.imageGen.model || 'default'})`);
-    console.log(`   TikTok: Connected`);
-    
-    const crossPost = Object.keys(config.postiz?.integrationIds || {}).filter(k => k !== 'tiktok');
-    if (crossPost.length > 0) {
-      console.log(`   Cross-posting: ${crossPost.join(', ')}`);
-    }
-    
-    if (config.revenuecat?.enabled) {
-      console.log(`   RevenueCat: Connected (${config.revenuecat.projectId})`);
-    }
-    
-    console.log(`\n   Privacy: ${config.posting?.privacyLevel || 'SELF_ONLY'}`);
-    console.log(`   Schedule: ${(config.posting?.schedule || []).join(', ')}`);
-  } else {
-    console.log('⚠️  Config incomplete:\n');
-    issues.forEach(i => console.log(`   ${i}`));
-    console.log('\nRun onboarding again to fill in missing fields.');
-    process.exit(1);
+  const required = [];
+  const optional = [];
+
+  // App profile (required)
+  if (!config.app?.name) required.push('app.name — What is the app called?');
+  if (!config.app?.description) required.push('app.description — What does it do?');
+  if (!config.app?.audience) required.push('app.audience — Who is it for?');
+  if (!config.app?.problem) required.push('app.problem — What problem does it solve?');
+  if (!config.app?.category) required.push('app.category — What category?');
+
+  // Image generation (required)
+  if (!config.imageGen?.provider) required.push('imageGen.provider — Which image tool?');
+  if (config.imageGen?.provider && config.imageGen.provider !== 'local' && !config.imageGen?.apiKey) {
+    required.push('imageGen.apiKey — API key for image generation');
   }
+
+  // Postiz (required)
+  if (!config.postiz?.apiKey) required.push('postiz.apiKey — Postiz API key');
+  if (!config.postiz?.integrationIds?.tiktok) required.push('postiz.integrationIds.tiktok — TikTok integration ID');
+
+  // Competitor research (important but not blocking)
+  const compPath = config.competitors;
+  if (compPath && fs.existsSync(compPath)) {
+    const comp = JSON.parse(fs.readFileSync(compPath, 'utf-8'));
+    if (!comp.competitors || comp.competitors.length === 0) {
+      optional.push('Competitor research — no competitors analyzed yet (run browser research)');
+    }
+  } else {
+    optional.push('Competitor research — file not created yet');
+  }
+
+  // Strategy
+  const stratPath = config.strategy;
+  if (stratPath && fs.existsSync(stratPath)) {
+    const strat = JSON.parse(fs.readFileSync(stratPath, 'utf-8'));
+    if (!strat.hooks || strat.hooks.length === 0) {
+      optional.push('Content strategy — no hooks planned yet');
+    }
+  } else {
+    optional.push('Content strategy — file not created yet');
+  }
+
+  // RevenueCat (optional)
+  if (config.app?.isMobileApp && !config.revenuecat?.enabled) {
+    optional.push('RevenueCat — mobile app detected but RC not connected (recommended for conversion tracking)');
+  }
+
+  // App Store link
+  if (!config.app?.appStoreUrl) optional.push('App Store / website URL — helpful for competitor research');
+
+  // Results
+  if (required.length === 0) {
+    console.log('✅ Core config complete! Ready to start posting.\n');
+  } else {
+    console.log('❌ Missing required config:\n');
+    required.forEach(r => console.log(`   ⬚ ${r}`));
+    console.log('');
+  }
+
+  if (optional.length > 0) {
+    console.log('💡 Recommended (not blocking):\n');
+    optional.forEach(o => console.log(`   ○ ${o}`));
+    console.log('');
+  }
+
+  // Summary
+  console.log('📋 Setup Summary:');
+  console.log(`   App: ${config.app?.name || '(not set)'}`);
+  console.log(`   Category: ${config.app?.category || '(not set)'}`);
+  console.log(`   Image Gen: ${config.imageGen?.provider || '(not set)'}${config.imageGen?.model ? ` (${config.imageGen.model})` : ''}`);
+  console.log(`   TikTok: ${config.postiz?.integrationIds?.tiktok ? 'Connected' : 'Not connected'}`);
+
+  const crossPost = Object.keys(config.postiz?.integrationIds || {}).filter(k => k !== 'tiktok' && config.postiz.integrationIds[k]);
+  if (crossPost.length > 0) console.log(`   Cross-posting: ${crossPost.join(', ')}`);
+
+  if (config.revenuecat?.enabled) console.log(`   RevenueCat: Connected`);
+
+  console.log(`   Privacy: ${config.posting?.privacyLevel || 'SELF_ONLY'}`);
+  console.log(`   Schedule: ${(config.posting?.schedule || []).join(', ')}`);
+
+  process.exit(required.length > 0 ? 1 : 0);
 } else {
-  // Print onboarding checklist
-  console.log(`
-╔══════════════════════════════════════════════════╗
-║       TikTok App Marketing — Setup Guide         ║
-╚══════════════════════════════════════════════════╝
-
-STEP 1: APP PROFILE
-━━━━━━━━━━━━━━━━━━
-Collect from user:
-  □ App/product name
-  □ Detailed description (what it does)
-  □ Target audience (who it's for, demographics)
-  □ Problem it solves (pain point — drives hooks)
-  □ App Store / website link
-  □ Is it a mobile app with IAP/subscriptions?
-  □ Category (home/beauty/fitness/productivity/food/other)
-  □ Existing brand guidelines or content?
-  □ What makes it different from competitors?
-
-STEP 2: IMAGE/VIDEO GENERATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Ask: "What do you want to use for image generation?"
-
-Supported providers:
-  • OpenAI — gpt-image-1.5 (recommended), dall-e-3
-  • Stability AI — Stable Diffusion XL and newer
-  • Replicate — any model (Flux, SDXL, etc.)
-  • Local — bring your own images (no generation)
-
-→ Then ask for their API key (skip for local)
-→ Ask which specific model they want
-→ Store as imageGen.provider + imageGen.model + imageGen.apiKey
-
-STEP 3: POSTIZ
-━━━━━━━━━━━━━━
-Sign up: ${REFERRAL_LINK}
-
-This skill was built by @oliverhenry and is free.
-Signing up through the referral link is appreciated
-as it directly supports continued development.
-
-  □ Create Postiz account
-  □ Connect TikTok
-  □ (Optional) Connect Instagram, YouTube, Threads
-  □ Get API key from Settings
-  □ Note TikTok integration ID
-
-STEP 4: REVENUECAT (Mobile Apps Only)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-If mobile app with subscriptions:
-  □ Install RevenueCat skill (clawhub install revenuecat)
-  □ Get V2 secret API key from RC Dashboard
-  □ Mention RevenueCat MCP for product/offering control
-
-STEP 5: GENERATE FIRST POST
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Don't wait — generate and post immediately to show
-it works. Use the proven hook formula for their category.
-
-Save config to: tiktok-marketing/config.json
-`);
+  console.log('Usage:');
+  console.log('  node onboarding.js --init --dir tiktok-marketing/    Create directory structure');
+  console.log('  node onboarding.js --validate --config config.json    Validate config completeness');
 }

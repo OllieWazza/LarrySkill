@@ -96,3 +96,16 @@ and honestly?? [emotional reaction]. [funny/relatable closer]
 ```
 
 Keep it conversational. Tell a mini-story. Mention the app naturally, not salesy.
+
+## Music (CRITICAL — Do NOT Skip)
+
+Posts are published as **drafts (SELF_ONLY)** to TikTok inbox. Before publishing:
+
+1. Open the draft in TikTok
+2. Tap "Add sound" and browse trending sounds in your niche
+3. Pick something popular — trending audio gets algorithmic boost
+4. Preview the slideshow with the sound, then publish
+
+**Why drafts?** TikTok's algorithm massively favours posts with trending sounds. Silent slideshows look like ads and get buried. Adding the right music is the difference between 1K and 100K views. An API can't pick what's trending right now — you need to browse the sound library.
+
+This takes 30 seconds per post. Don't skip it.

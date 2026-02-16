@@ -113,3 +113,39 @@ Views → Profile Visits → Link Clicks → App Store → Download → Trial �
 - Use unique UTM links per campaign if possible
 - RevenueCat `$attribution` for source tracking
 - Compare weekly MRR growth with weekly view totals
+
+## Daily Analytics Cron
+
+Set up a cron job to run every morning before the first post (e.g. 7:00 AM user's timezone):
+
+```
+Task: node scripts/daily-report.js --config tiktok-marketing/config.json --days 3
+Output: tiktok-marketing/reports/YYYY-MM-DD.md
+```
+
+The daily report:
+1. Fetches all posts from the last 3 days via Postiz API
+2. Pulls per-post analytics (views, likes, comments, shares)
+3. If RevenueCat is connected, pulls conversion events (trials, purchases) in the same window
+4. Cross-references: maps conversion timestamps to post publish times (24-72h attribution window)
+5. Applies the diagnostic framework:
+   - High views + High conversions → SCALE (make variations)
+   - High views + Low conversions → FIX CTA (hook works, downstream is broken)
+   - Low views + High conversions → FIX HOOKS (content converts, needs more eyeballs)
+   - Low views + Low conversions → FULL RESET (try radically different approach)
+6. Suggests 3-5 new hooks based on what's working
+7. Updates `hook-performance.json` with latest data
+8. Messages the user with a summary
+
+### Why 3 Days?
+- TikTok posts peak at 24-48 hours (not instant like Twitter)
+- Conversion attribution takes up to 72 hours (user sees post → downloads → trials → pays)
+- 3-day window captures the full lifecycle of each post
+
+### RevenueCat Integration
+When connected, the daily report pulls:
+- **Trial starts** within 24-72h of each post → maps to which hooks drive installs
+- **Paid conversions** (initial purchase + trial converted) → maps to which CTAs convert
+- **Revenue** per period → tracks actual MRR impact of content
+
+This is the difference between "this post got 50K views" (vanity) and "this post generated $47 in new subscriptions" (intelligence).
