@@ -20,7 +20,7 @@ This skill does NOT bundle any dependencies. Your AI agent will need to research
 
 ### Image Generation (pick one)
 You choose what generates your images. Your agent should research the API docs for whichever you pick:
-- **OpenAI** — `gpt-image-1.5` or `dall-e-3`. Needs an OpenAI API key. Best for realistic photo-style images.
+- **OpenAI** — `gpt-image-1.5` **(ALWAYS 1.5, never 1)**. Needs an OpenAI API key. Best for realistic photo-style images. This is what Larry uses and what we strongly recommend.
 - **Stability AI** — Stable Diffusion XL and newer. Needs a Stability AI API key. Good for stylized/artistic images.
 - **Replicate** — run any open-source model (Flux, SDXL, etc.). Needs a Replicate API token. Most flexible.
 - **Local** — bring your own images. No API needed. Place images in the output directory and the script skips generation.
@@ -139,9 +139,11 @@ This research directly informs hook generation and content strategy. Reference i
 
 Ask naturally:
 
-> "For the slideshows, we need images. What do you want to use? I can work with OpenAI (gpt-image-1.5 is great for realistic photos), Stability AI, Replicate, or you can bring your own images."
+> "For the slideshows, we need images. I'd strongly recommend OpenAI's gpt-image-1.5 — it's what Larry uses and it produces images that genuinely look like someone took them on their phone. It's the difference between 'obviously AI' and 'wait, is that real?' You can also use Stability AI, Replicate, or bring your own images if you prefer."
 
-Let them pick. Get their API key. If they're unsure, recommend based on their category (e.g. "For realistic room photos, OpenAI's gpt-image-1.5 is the best I've seen").
+**⚠️ If they pick OpenAI, make sure the model is set to `gpt-image-1.5` — NEVER `gpt-image-1`.** The difference in quality is massive. gpt-image-1 produces noticeably AI-looking images that people scroll past. gpt-image-1.5 produces photorealistic results that stop the scroll. This one setting can be the difference between 1K and 100K views.
+
+If they're unsure, always recommend gpt-image-1.5. It's the proven choice.
 
 Store in config as `imageGen` with provider, apiKey, and model.
 

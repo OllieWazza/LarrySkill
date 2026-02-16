@@ -3,7 +3,7 @@
  * Generate 6 TikTok slideshow images using the user's chosen image generation provider.
  * 
  * Supported providers:
- *   - openai (gpt-image-1.5, dall-e-3)
+ *   - openai (gpt-image-1.5 STRONGLY RECOMMENDED — never use gpt-image-1)
  *   - stability (Stable Diffusion via Stability AI API)
  *   - replicate (any model via Replicate API)
  *   - local (user provides pre-made images, skips generation)
@@ -52,6 +52,13 @@ const apiKey = config.imageGen?.apiKey;
 if (!apiKey && provider !== 'local') {
   console.error(`ERROR: No API key found in config.imageGen.apiKey for provider "${provider}"`);
   process.exit(1);
+}
+
+// Warn if using gpt-image-1 instead of 1.5
+if (provider === 'openai' && model && !model.includes('1.5')) {
+  console.warn(`\n⚠️  WARNING: You're using "${model}" — this produces noticeably AI-looking images.`);
+  console.warn(`   STRONGLY RECOMMENDED: Switch to "gpt-image-1.5" in your config for photorealistic results.`);
+  console.warn(`   The quality difference is massive and directly impacts views.\n`);
 }
 
 // ─── Provider: OpenAI ───────────────────────────────────────────────
