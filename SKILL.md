@@ -326,7 +326,29 @@ Store everything in `tiktok-marketing/config.json` (this is the source of truth 
 }
 ```
 
-Then immediately generate and post the first slideshow. Don't wait — show them it works. Use the hook strategy built from competitor research and their category (see [references/slide-structure.md](references/slide-structure.md)).
+Then generate the **first test slideshow** — but set expectations:
+
+> "Let's create our first slideshow. This is a TEST — we're dialing in the image style, not posting yet. I'll generate 6 slides and we'll look at them together. If the images look off, we tweak the prompts and try again. The goal is to get the look nailed down BEFORE we start posting."
+
+**⚠️ THE REFINEMENT PROCESS IS PART OF THE SKILL:**
+
+Getting the images right takes iteration. This is normal and expected. Walk the user through it:
+
+1. **Generate a test set of 6 images** using the prompts you built together
+2. **Show them the results** and ask: "How do these look? Too polished? Too dark? Wrong vibe? Wrong furniture?"
+3. **Tweak based on feedback** — adjust the base prompt, regenerate
+4. **Repeat until they're happy** — this might take 2-5 rounds, that's fine
+5. **Lock the prompt style** once it looks right — save to config
+
+Things to watch for and ask about:
+- "Are these realistic enough or do they look AI-generated?"
+- "Is the lighting right? Too bright? Too moody?"
+- "Does this match what your users would actually relate to?"
+- "Are the everyday details right? (furniture style, objects, layout)"
+
+**You do NOT have to post anything you don't like.** The first few generations are purely for refining the prompt. Only start posting once the images consistently look good. The agent learns from each round — what works, what doesn't, what to emphasise in the prompt.
+
+Once the style is locked in, THEN use the hook strategy from competitor research and their category (see [references/slide-structure.md](references/slide-structure.md)) and start the posting schedule.
 
 ---
 
