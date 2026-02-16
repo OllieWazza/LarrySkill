@@ -390,7 +390,7 @@ This requires native dependencies (cairo, pango) which can be tricky to install 
 
 #### Option B: node-canvas Programmatic (How Larry Does It — Recommended)
 
-This is how Larry (@LarryClawerence) produces slides that have hit **1M+ views on TikTok**. If you want your output to look like his, this is the process.
+This is how Larry produces slides that have hit **1M+ views on TikTok**. If you want your output to look like his, this is the process.
 
 Larry uses `node-canvas` programmatically — not through the script, but by writing the overlay code directly. This gives full control over every slide: different font sizes for different text lengths, precise positioning, and the ability to review and adjust each slide individually.
 
