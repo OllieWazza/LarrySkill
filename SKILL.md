@@ -116,9 +116,41 @@ Ask naturally:
 
 > "For the slideshows, we need images. What do you want to use? I can work with OpenAI (gpt-image-1.5 is great for realistic photos), Stability AI, Replicate, or you can bring your own images."
 
-Let them pick. Get their API key. Don't over-explain — if they know what they want, just take the key and move on. If they're unsure, recommend based on their category (e.g. "For realistic room photos, OpenAI's gpt-image-1.5 is the best I've seen").
+Let them pick. Get their API key. If they're unsure, recommend based on their category (e.g. "For realistic room photos, OpenAI's gpt-image-1.5 is the best I've seen").
 
 Store in config as `imageGen` with provider, apiKey, and model.
+
+**Then — and this is critical — work through the image style with them.** Don't just use a generic prompt. Bad images = nobody watches. Ask these naturally, one or two at a time:
+
+> "Now let's figure out what these images should actually look like. Do you want them to look like real photos someone took on their phone, or more like polished graphics or illustrations?"
+
+Then based on their answer, dig deeper:
+
+- **What's the subject?** "What are we actually showing? Rooms? Faces? Products? Before/after comparisons?"
+- **What vibe?** "Cozy and warm? Clean and minimal? Luxurious? Think about what your audience relates to or aspires to."
+- **Consistency:** "Should all 6 slides look like the same place or person? If yes — I need to lock down specific details so each slide doesn't look totally different."
+- **Must-have elements?** "Anything that HAS to be in every image? A specific product? Certain furniture? A pet?"
+
+Build the base prompt WITH them. A good base prompt looks like:
+
+```
+iPhone photo of a [specific room/scene], [specific style], [specific details].
+Realistic lighting, natural colors, taken on iPhone 15 Pro.
+No text, no watermarks, no logos.
+[Consistency anchors: "same window on left wall", "same grey sofa", "wooden coffee table in center"]
+```
+
+**Save the agreed prompt style to config as `imageGen.basePrompt`** so every future post uses it.
+
+**Key prompt rules (explain these as they come up, don't lecture):**
+- "iPhone photo" + "realistic lighting" = looks real, not AI-generated
+- Lock architecture/layout in EVERY slide prompt or each slide looks like a different place
+- Include everyday objects (mugs, remotes, magazines) for lived-in feel
+- For before/after: "before" = modern but tired, NOT ancient
+- Portrait orientation (1024x1536) always — this is TikTok
+- Extremely specific > vague ("small galley kitchen with white cabinets and a window above the sink" > "a kitchen")
+
+**NEVER use generic prompts** like "a nice living room" or "a beautiful face" — they produce generic images that get scrolled past.
 
 ### Phase 4: Postiz Setup (ESSENTIAL — Powers the Entire Feedback Loop)
 
