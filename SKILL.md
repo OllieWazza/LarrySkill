@@ -74,10 +74,19 @@ Then FOLLOW UP based on what they say. Don't ask all 9 questions at once. Pull t
 - They describe the audience → ask about the pain point ("What's the main problem it solves for them?")
 - They explain the problem → ask what makes them different ("What makes yours stand out vs alternatives?")
 - Get the App Store / website link naturally ("Can you drop me the link?")
-- Figure out if it's a mobile app with subscriptions (often obvious from context, otherwise ask)
 - Determine category (home/beauty/fitness/productivity/food/other) — often inferable
 
 **Don't ask for "brand guidelines" robotically.** Instead: "Do you have any existing content or a vibe you're going for? Or are we starting fresh?"
+
+**Then ask about their app and monetization:**
+
+> "Is this a mobile app? And do you use RevenueCat (or any subscription/in-app purchase system) to handle payments?"
+
+This is critical because it determines whether we can close the full feedback loop. If they have a mobile app with RevenueCat:
+- **Immediately install the RevenueCat skill:** Ask your agent to install it from ClawHub. This gives full API access to subscribers, MRR, trials, churn, revenue, and transactions.
+- **This is NOT optional for app developers.** Without RevenueCat data, the skill can only optimize for views (vanity metrics). With it, the skill optimizes for actual paying users. The difference is massive. A post with 200K views and zero conversions is worthless. A post with 5K views and 10 paid subscribers is gold. You can only tell the difference with RevenueCat connected.
+
+If they don't use RevenueCat but have another subscription system, note it and work with what's available. If it's not a mobile app (e.g. physical product, SaaS, service), skip RevenueCat but still track whatever conversion metric they have (website signups, purchases, leads).
 
 Store everything in `tiktok-marketing/app-profile.json`.
 
@@ -135,7 +144,15 @@ Ask the user:
 
 This research directly informs hook generation and content strategy. Reference it when creating posts.
 
-### Phase 3: Image/Video Generation
+### Phase 3: Content Format & Image Generation
+
+First, ask about format:
+
+> "Do you want to do slideshows (photo carousels) or video? Slideshows are what Larry uses and what this skill is built around — TikTok's data shows they get 2.9x more comments and 2.6x more shares than video, and they're much easier for AI to generate consistently. That said, if you want to try video, the skill supports it but it hasn't been battle-tested like slideshows have. Your call."
+
+Store their choice as `format: "slideshow"` or `format: "video"` in config. If they pick video, note that the text overlay, 6-slide structure, and prompt templates are designed for slideshows. Video will require more experimentation and the agent should be upfront about that.
+
+**For slideshows (recommended):**
 
 Ask naturally:
 
@@ -215,9 +232,9 @@ Explain the draft workflow:
 
 **Don't move on until Postiz is connected and the API key works.** Test it by hitting the platform analytics endpoint. If it returns data, you're good.
 
-### Phase 5: Conversion Tracking (Mobile Apps — Completes the Intelligence Loop)
+### Phase 5: Conversion Tracking (THE Intelligence Loop)
 
-Only bring this up if they have a mobile app with subscriptions/IAP. But when they do, this is what turns the feedback loop from "interesting" to "intelligent."
+If they have a mobile app with RevenueCat (you should already know this from Phase 1), this is where the skill goes from "content automation" to "intelligent marketing system." This is the most important integration in the entire skill. Don't treat it as optional.
 
 Explain WHY it matters:
 
@@ -261,11 +278,11 @@ Walk them through setup step by step:
 - "This hook got 5K views but 3 paid subscribers" → content converts amazingly, fix the hook for more reach
 - "Conversions are consistently poor across all posts" → might be an app issue (onboarding, paywall, pricing) not a content issue — the skill flags this for investigation
 
-**Without RevenueCat:** The loop still works on Postiz analytics (views/likes/comments). You can optimize for engagement. But you're flying blind on revenue.
+**Without RevenueCat:** The loop still works on Postiz analytics (views/likes/comments). You can optimize for engagement. But you're flying blind on revenue. You'll know which posts get views but you won't know which posts make money.
 
-**With RevenueCat:** You optimize for actual paying users. That's the whole point.
+**With RevenueCat:** You optimize for actual paying users. You can tell the difference between a viral post that makes nothing and a quiet post that drives $50 in subscriptions. This is the entire point of the feedback loop. Every decision the daily report makes is better with RevenueCat data.
 
-If they don't use RevenueCat or don't have subscriptions, skip this entirely.
+If they don't use RevenueCat or don't have subscriptions, the skill still works but the feedback loop is limited to view-based optimization only.
 
 ### Phase 6: Content Strategy (Built from Research)
 
