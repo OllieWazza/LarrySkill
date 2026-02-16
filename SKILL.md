@@ -373,142 +373,123 @@ The script auto-routes to the correct provider based on `config.imageGen.provide
 - Lock key elements across all slides (architecture, face shape, camera angle)
 - See [references/slide-structure.md](references/slide-structure.md) for the 6-slide formula
 
-### 2. Add Text Overlays (Using OpenClaw Canvas Tool)
+### 2. Add Text Overlays
 
-**Use the OpenClaw `canvas` tool.** This is how we do it — it works on every OpenClaw agent with zero dependencies, gives you full CSS control, and lets you preview before committing.
+There are two ways to add text to your slides:
 
-**DO NOT use the `scripts/add-text-overlay.js` script** unless the canvas tool is unavailable. The script requires `npm install canvas` with native C dependencies (cairo, pango) which many systems can't install. The canvas tool just works.
+#### Option A: node-canvas Script (Quick & Automated)
 
-#### Step-by-Step Process
+The included `scripts/add-text-overlay.js` handles text overlays automatically. It works but requires installing `node-canvas`:
 
-**For each slide (1-6):**
-
-1. **Build an HTML page** with the raw slide image as background and your text overlay
-2. **Present the canvas** using the `canvas` tool with the HTML
-3. **Snapshot the canvas** to capture the composited image (image + text baked together)
-4. **Review the result** — does the text look right? Right size? Right position? Readable?
-5. **Adjust if needed** — tweak font size, position, line breaks, then re-present and re-snapshot
-6. **Save the final image** — this is your finished slide ready for posting
-
-#### Exact HTML Template (Copy This)
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-<style>
-  * { margin: 0; padding: 0; }
-  body {
-    width: 1024px;
-    height: 1536px;
-    overflow: hidden;
-  }
-  .slide {
-    width: 1024px;
-    height: 1536px;
-    background-image: url('file:///absolute/path/to/slide1_raw.png');
-    background-size: cover;
-    background-position: center;
-    position: relative;
-  }
-  .text-overlay {
-    position: absolute;
-    top: 25%;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
-    max-width: 75%;
-    font-family: Arial, Helvetica, sans-serif;
-    font-weight: bold;
-    font-size: 66px;
-    color: white;
-    text-shadow:
-      -3px -3px 0 #000,
-       3px -3px 0 #000,
-      -3px  3px 0 #000,
-       3px  3px 0 #000,
-       0 0 8px rgba(0,0,0,0.5);
-    line-height: 1.3;
-  }
-</style>
-</head>
-<body>
-  <div class="slide">
-    <div class="text-overlay">
-      I showed my landlord<br>
-      what AI thinks our<br>
-      kitchen should look like
-    </div>
-  </div>
-</body>
-</html>
+```bash
+npm install canvas
+node scripts/add-text-overlay.js --input tiktok-marketing/posts/YYYY-MM-DD-HHmm/ --texts texts.json
 ```
 
-#### Canvas Tool Commands
+This requires native dependencies (cairo, pango) which can be tricky to install on some systems. The script auto-wraps text and handles positioning, but gives you less control over per-slide styling.
 
+#### Option B: node-canvas Programmatic (How Larry Does It — Recommended)
+
+This is how Larry (@LarryClawerence) produces slides that have hit **1M+ views on TikTok**. If you want your output to look like his, this is the process.
+
+Larry uses `node-canvas` programmatically — not through the script, but by writing the overlay code directly. This gives full control over every slide: different font sizes for different text lengths, precise positioning, and the ability to review and adjust each slide individually.
+
+**The process:**
+
+1. **Load the raw slide image** into a node-canvas
+2. **Configure text settings** based on the text length for that specific slide
+3. **Draw the text** with white fill and thick black outline
+4. **Review the output** — check sizing, positioning, readability
+5. **Adjust and re-render** if anything looks off
+6. **Save the final image** once it looks right
+
+**Exact code Larry uses:**
+
+```javascript
+const { createCanvas, loadImage } = require('canvas');
+const fs = require('fs');
+
+async function addOverlay(imagePath, text, outputPath) {
+  const img = await loadImage(imagePath);
+  const canvas = createCanvas(img.width, img.height);
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+
+  // ─── Adjust font size based on text length ───
+  const wordCount = text.split(/\s+/).length;
+  let fontSizePercent;
+  if (wordCount <= 5)       fontSizePercent = 0.075;  // Short: 75px on 1024w
+  else if (wordCount <= 12) fontSizePercent = 0.065;  // Medium: 66px
+  else                      fontSizePercent = 0.050;  // Long: 51px
+
+  const fontSize = Math.round(img.width * fontSizePercent);
+  const outlineWidth = Math.round(fontSize * 0.15);
+  const maxWidth = img.width * 0.75;
+  const lineHeight = fontSize * 1.3;
+
+  ctx.font = `bold ${fontSize}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+
+  // ─── Word wrap ───
+  const lines = [];
+  const manualLines = text.split('\n');
+  for (const ml of manualLines) {
+    const words = ml.trim().split(/\s+/);
+    let current = '';
+    for (const word of words) {
+      const test = current ? `${current} ${word}` : word;
+      if (ctx.measureText(test).width <= maxWidth) {
+        current = test;
+      } else {
+        if (current) lines.push(current);
+        current = word;
+      }
+    }
+    if (current) lines.push(current);
+  }
+
+  // ─── Position: centered at ~28% from top ───
+  const totalHeight = lines.length * lineHeight;
+  const startY = (img.height * 0.28) - (totalHeight / 2);
+  const x = img.width / 2;
+
+  // ─── Draw each line ───
+  for (let i = 0; i < lines.length; i++) {
+    const y = startY + (i * lineHeight);
+
+    // Black outline
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = outlineWidth;
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
+    ctx.strokeText(lines[i], x, y);
+
+    // White fill
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(lines[i], x, y);
+  }
+
+  fs.writeFileSync(outputPath, canvas.toBuffer('image/png'));
+}
 ```
-// 1. Present the canvas with your HTML
-canvas present --url file:///path/to/slide1_overlay.html --width 1024 --height 1536
 
-// 2. Snapshot to capture the result
-canvas snapshot --outputFormat png
-// This gives you the composited image (background + text baked together)
+**Key details that make Larry's slides look professional:**
 
-// 3. Review — does it look good? If not, edit the HTML and re-present
-```
+- **Dynamic font sizing** — short text gets bigger (75px), long text gets smaller (51px). Every slide is optimized.
+- **Word wrap** — respects manual `\n` breaks but also auto-wraps lines that exceed 75% width. No squashing.
+- **Centered at 28% from top** — text block is vertically centered around this point, not pinned to it. Stays in the safe zone regardless of line count.
+- **Thick outline** — 15% of font size. Makes text readable on ANY background.
+- **Manual line breaks preferred** — use `\n` in your text for control. Keep lines to 4-6 words.
 
-#### Text Sizing Guide
-
-The font size depends on how much text you have per slide. These are proven sizes:
-
-| Text length | Font size | Example |
-|-------------|-----------|---------|
-| Short (3-5 words) | 72-80px | "Wait... is this real??" |
-| Medium (6-12 words) | 60-66px | "I showed my landlord\nwhat AI thinks" |
-| Long (13+ words) | 48-54px | "My boyfriend said our flat\nlooks like a prison cell\nso I showed him this" |
-
-**The agent should adjust font size per slide based on text length.** This is a huge advantage over the script — each slide can have different sizing.
-
-#### Line Break Rules
-
-- **Use `<br>` tags** in the HTML for manual line breaks
-- **4-6 words per line MAX** — short lines are scannable at a glance
-- **Read it aloud** — each line should feel like a natural pause
+**Text content rules:**
+- **REACTIONS not labels** — "Wait... this is actually nice??" not "Modern minimalist"
+- **4-6 words per line** — short lines are scannable at a glance
 - **3-4 lines per slide is ideal**
-- **NEVER put all text on one line** — it either gets tiny or overflows
-
-**Good:**
-```html
-I showed my landlord<br>
-what AI thinks our<br>
-kitchen should look like
-```
-
-**Bad:**
-```html
-I showed my landlord what AI thinks our kitchen should look like
-```
-
-#### Why Canvas Tool Over Scripts
-
-- **Zero dependencies** — works on every OpenClaw agent immediately
-- **Preview before saving** — see exactly what it looks like, adjust in real-time
-- **Per-slide control** — different font sizes, emphasis, styling per slide
-- **CSS power** — shadows, gradients, bold/italic on individual words, ALL CAPS for emphasis
-- **No squashing** — CSS word-wrap handles long text naturally, no `maxWidth` compression
-
-#### Text Style Spec
-
-- **Font:** Bold Arial/Helvetica (sans-serif)
-- **Color:** White (`#FFFFFF`)
-- **Outline:** Thick black text-shadow (the CSS above creates a solid outline effect)
-- **Position:** Centered horizontally, ~25-30% from top
-- **Max width:** 75% of image width (stays clear of TikTok UI on both sides)
+- **No emoji** — canvas can't render them reliably
 - **Safe zones:** No text in bottom 20% (TikTok controls) or top 10% (status bar)
-- **Content:** Text must be REACTIONS not labels ("Wait... this is actually nice??" not "Modern minimalist")
-- **No emoji** in overlay text (rendering is inconsistent)
 
-**Fallback only:** If canvas tool is unavailable, `scripts/add-text-overlay.js` works but requires `npm install canvas` (native cairo/pango dependencies).
+**The difference between OK slides and viral slides is in these details.** Larry's slides consistently hit 50K-150K+ views because the text is sized right, positioned right, and readable at a glance while scrolling.
 
 **⚠️ LINE BREAKS ARE CRITICAL — Read This:**
 
