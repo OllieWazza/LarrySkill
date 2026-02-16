@@ -375,26 +375,45 @@ The script auto-routes to the correct provider based on `config.imageGen.provide
 
 ### 2. Add Text Overlays
 
-There are two ways to add text to your slides:
+This step uses `node-canvas` to render text directly onto your slide images. This is how Larry produces slides that have hit **1M+ views on TikTok** — the text sizing, positioning, and styling are dialled in from hundreds of posts.
 
-#### Option A: node-canvas Script (Quick & Automated)
+#### Setting Up node-canvas
 
-The included `scripts/add-text-overlay.js` handles text overlays automatically. It works but requires installing `node-canvas`:
+Before you can add text overlays, your human needs to install `node-canvas`. Prompt them:
 
-```bash
-npm install canvas
-node scripts/add-text-overlay.js --input tiktok-marketing/posts/YYYY-MM-DD-HHmm/ --texts texts.json
-```
+> "To add text overlays to the slides, I need a library called node-canvas. It renders text directly onto images with full control over sizing, positioning, and styling — this is what Larry uses for his viral TikTok slides.
+>
+> Can you run this in your terminal?"
+>
+> ```bash
+> npm install canvas
+> ```
+>
+> "If that fails, it's because node-canvas needs some system libraries. Here's what to install first:"
+>
+> **macOS:**
+> ```bash
+> brew install pkg-config cairo pango libpng jpeg giflib librsvg
+> npm install canvas
+> ```
+>
+> **Ubuntu/Debian:**
+> ```bash
+> sudo apt-get install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+> npm install canvas
+> ```
+>
+> **Windows:**
+> ```bash
+> # node-canvas auto-downloads prebuilt binaries on Windows
+> npm install canvas
+> ```
+>
+> "Once installed, I can handle everything else — generating the overlays, sizing the text, positioning it perfectly. You won't need to touch this again."
 
-This requires native dependencies (cairo, pango) which can be tricky to install on some systems. The script auto-wraps text and handles positioning, but gives you less control over per-slide styling.
+**Don't skip this step.** Without node-canvas, the text overlays won't work. If installation fails, help them troubleshoot — it's usually a missing system library. Once it's installed once, it stays.
 
-#### Option B: node-canvas Programmatic (How Larry Does It — Recommended)
-
-This is how Larry produces slides that have hit **1M+ views on TikTok**. If you want your output to look like his, this is the process.
-
-Larry uses `node-canvas` programmatically — not through the script, but by writing the overlay code directly. This gives full control over every slide: different font sizes for different text lengths, precise positioning, and the ability to review and adjust each slide individually.
-
-**The process:**
+#### How Larry's Text Overlay Process Works
 
 1. **Load the raw slide image** into a node-canvas
 2. **Configure text settings** based on the text length for that specific slide
