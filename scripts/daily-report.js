@@ -362,20 +362,33 @@ function savePlatformStats(stats) {
   }
 
   // ==========================================
-  // 6. HOOK PERFORMANCE TRACKING
+  // 6. HOOK + CTA PERFORMANCE TRACKING
   // ==========================================
   const hookPath = path.join(baseDir, 'hook-performance.json');
-  let hookData = { hooks: [], rules: { doubleDown: [], testing: [], dropped: [] } };
+  let hookData = { hooks: [], ctas: [], rules: { doubleDown: [], testing: [], dropped: [] } };
   if (fs.existsSync(hookPath)) {
     hookData = JSON.parse(fs.readFileSync(hookPath, 'utf-8'));
+    if (!hookData.ctas) hookData.ctas = [];
   }
 
-  // Update hook performance
+  // Update hook performance with conversion data
   for (const p of postResults) {
+    // Calculate conversions attributed to this post (72h window)
+    let conversions = 0;
+    if (rcMetrics?.transactions?.length > 0) {
+      const postDate = new Date(p.date);
+      const windowEnd = new Date(postDate.getTime() + 72 * 3600000);
+      conversions = rcMetrics.transactions.filter(tx => {
+        const txDate = new Date(tx.purchase_date || tx.created_at);
+        return txDate >= postDate && txDate <= windowEnd;
+      }).length;
+    }
+
     const existing = hookData.hooks.find(h => h.postId === p.id);
     if (existing) {
       existing.views = p.views;
       existing.likes = p.likes;
+      existing.conversions = conversions;
       existing.lastChecked = dateStr;
     } else {
       hookData.hooks.push({
@@ -387,6 +400,8 @@ function savePlatformStats(stats) {
         likes: p.likes,
         comments: p.comments,
         shares: p.shares,
+        conversions,
+        cta: '', // agent should tag this when creating posts
         lastChecked: dateStr
       });
     }
@@ -394,33 +409,145 @@ function savePlatformStats(stats) {
   fs.writeFileSync(hookPath, JSON.stringify(hookData, null, 2));
 
   // ==========================================
-  // 7. RECOMMENDATIONS
+  // 7. AUTOMATED FUNNEL DIAGNOSIS PER POST
   // ==========================================
-  report += `## Recommendations\n\n`;
+  report += `## Per-Post Funnel Diagnosis\n\n`;
 
-  for (const app of apps) {
-    const appPosts = postResults.filter(p => p.app === app);
-    appPosts.sort((a, b) => b.views - a.views);
+  const hasRC = rcMetrics && rcPrevMetrics;
+  const allHooks = hookData.hooks.filter(h => h.lastChecked === dateStr);
 
-    report += `### ${app}\n\n`;
-    
-    if (appPosts.length > 0) {
-      const best = appPosts[0];
-      report += `**Best:** "${best.hook.substring(0, 50)}..." — ${best.views.toLocaleString()} views\n`;
-      if (best.views >= 50000) {
-        report += `→ 🔥 DOUBLE DOWN — make 3 variations of this hook immediately\n`;
+  if (allHooks.length > 0 && hasRC) {
+    // Sort by views descending
+    const sorted = [...allHooks].sort((a, b) => b.views - a.views);
+    const viewMedian = sorted[Math.floor(sorted.length / 2)]?.views || 1000;
+
+    for (const h of sorted) {
+      const highViews = h.views > viewMedian && h.views > 5000;
+      const hasConversions = h.conversions > 0;
+
+      report += `**"${h.text.substring(0, 55)}..."** — ${h.views.toLocaleString()} views, ${h.conversions} conversions\n`;
+
+      if (highViews && hasConversions) {
+        report += `  🟢 Hook + CTA both working → SCALE this hook, keep the CTA\n`;
+      } else if (highViews && !hasConversions) {
+        report += `  🟡 High views but no conversions → Hook is good, CTA needs changing. Try a different slide 6 CTA.\n`;
+      } else if (!highViews && hasConversions) {
+        report += `  🟡 Low views but people who saw it converted → CTA is great, hook needs work. Try a stronger hook with the same CTA.\n`;
+      } else {
+        report += `  🔴 Low views + no conversions → Drop this hook and CTA combination\n`;
       }
-
-      const worst = appPosts[appPosts.length - 1];
-      if (worst.views < 1000 && appPosts.length > 1) {
-        report += `**Drop:** "${worst.hook.substring(0, 50)}..." — ${worst.views} views\n`;
-      }
+      report += '\n';
     }
 
-    report += `\n**Suggested hooks for today:**\n`;
-    report += `- [Variation of top performer]\n`;
-    report += `- [New hook from untested category]\n`;
-    report += `- [Competitor-inspired hook]\n\n`;
+    // Check for systemic app issues
+    const totalRecentViews = sorted.reduce((s, h) => s + h.views, 0);
+    const totalConversions = sorted.reduce((s, h) => s + h.conversions, 0);
+    const subDelta = rcMetrics.activeSubscribers - (rcPrevMetrics.activeSubscribers || 0);
+    const customerDelta = rcMetrics.newCustomers - (rcPrevMetrics.newCustomers || 0);
+
+    if (totalRecentViews > 50000 && customerDelta > 10 && subDelta <= 0) {
+      report += `### 🔴 APP ISSUE DETECTED\n\n`;
+      report += `Views are high (${totalRecentViews.toLocaleString()}) and people are downloading (+${customerDelta} new customers), but nobody is paying (${subDelta >= 0 ? '+' : ''}${subDelta} subscribers).\n`;
+      report += `This is NOT a marketing problem — the content is working. The app onboarding, paywall, or pricing needs attention.\n`;
+      report += `- Is the paywall shown at the right time?\n`;
+      report += `- Is the free experience too generous?\n`;
+      report += `- Is the value proposition clear before the paywall?\n`;
+      report += `- Does the onboarding guide users to the "aha moment"?\n\n`;
+    } else if (totalRecentViews > 50000 && customerDelta <= 3) {
+      report += `### 🟡 CTA ISSUE DETECTED\n\n`;
+      report += `Views are high (${totalRecentViews.toLocaleString()}) but very few people are downloading (+${customerDelta} new customers).\n`;
+      report += `The hooks are working but the CTAs aren't driving action. Rotate to a different CTA style.\n\n`;
+    }
+  } else if (!hasRC) {
+    report += `⚠️ No RevenueCat data — can only diagnose hooks (views), not CTAs (conversions). Connect RevenueCat for full funnel intelligence.\n\n`;
+  }
+
+  // ==========================================
+  // 8. AUTO-GENERATED HOOKS & CTAs
+  // ==========================================
+  report += `## Auto-Generated Recommendations\n\n`;
+
+  // Analyse all historical hooks to find patterns
+  const allHistorical = hookData.hooks.filter(h => h.views > 0);
+
+  for (const app of apps) {
+    const appHooks = allHistorical.filter(h => h.app === app);
+    if (appHooks.length === 0) continue;
+
+    appHooks.sort((a, b) => b.views - a.views);
+    const winners = appHooks.filter(h => h.views >= 10000);
+    const losers = appHooks.filter(h => h.views < 1000);
+
+    report += `### ${app}\n\n`;
+
+    // Identify winning patterns from actual hook text
+    if (winners.length > 0) {
+      report += `**Winning hooks (10K+ views):**\n`;
+      for (const w of winners.slice(0, 5)) {
+        report += `- "${w.text.substring(0, 60)}..." — ${w.views.toLocaleString()} views, ${w.conversions || 0} conversions\n`;
+      }
+      report += '\n';
+
+      // Extract patterns from winners
+      const winnerTexts = winners.map(w => w.text.toLowerCase());
+      const patterns = {
+        personConflict: winnerTexts.filter(t => /\b(showed|told|said|asked)\b/.test(t) && /\b(my |mum|mom|dad|landlord|boyfriend|girlfriend|friend|sister|brother|boss|nan)\b/.test(t)).length,
+        pov: winnerTexts.filter(t => t.startsWith('pov')).length,
+        question: winnerTexts.filter(t => t.includes('?')).length,
+        emotion: winnerTexts.filter(t => /\b(obsessed|can't believe|shocked|never thought|didn't expect)\b/.test(t)).length
+      };
+
+      const topPattern = Object.entries(patterns).sort((a, b) => b[1] - a[1])[0];
+
+      report += `**Strongest pattern:** ${topPattern[0]} (${topPattern[1]}/${winners.length} winners use this)\n\n`;
+
+      // Generate new hooks based on winning patterns
+      report += `**🔥 Generated hooks (based on your winners):**\n`;
+      report += `\n`;
+      report += `The agent should now generate 3-5 NEW hooks that follow the "${topPattern[0]}" pattern, using:\n`;
+      report += `- The app's product description from config\n`;
+      report += `- The winning hook structures above as templates\n`;
+      report += `- Different people/scenarios to keep it fresh\n\n`;
+
+      // Specific generation instructions for the agent
+      report += `**AGENT INSTRUCTION:** Read the winning hooks above. Identify the structure (who + conflict + reveal). `;
+      report += `Generate 3 new hooks that follow the SAME structure but with different people and scenarios. `;
+      report += `Example: if "I showed my landlord..." won, try "I showed my nan...", "I showed my boss...", "My flatmate didn't believe..."\n\n`;
+    }
+
+    if (losers.length > 0) {
+      report += `**Drop these patterns (< 1K views):**\n`;
+      for (const l of losers.slice(0, 3)) {
+        report += `- "${l.text.substring(0, 60)}..." — ${l.views} views\n`;
+      }
+      report += '\n';
+    }
+
+    // CTA recommendations based on conversion data
+    if (hasRC) {
+      const highViewLowConvert = appHooks.filter(h => h.views > 10000 && (h.conversions || 0) === 0);
+      const lowViewHighConvert = appHooks.filter(h => h.views < 5000 && (h.conversions || 0) > 0);
+
+      if (highViewLowConvert.length > 0) {
+        report += `**🔄 CTA rotation needed** — ${highViewLowConvert.length} posts got 10K+ views but zero conversions.\n`;
+        report += `Current CTAs aren't driving downloads. Try rotating through:\n`;
+        report += `- "Download [app] — link in bio"\n`;
+        report += `- "[app] is free to try — link in bio"\n`;
+        report += `- "I used [app] for this — link in bio"\n`;
+        report += `- "Search [app] on the App Store"\n`;
+        report += `- No explicit CTA (just app name visible on slide 6)\n`;
+        report += `Track which CTA each post uses in hook-performance.json to identify what converts.\n\n`;
+      }
+
+      if (lowViewHighConvert.length > 0) {
+        report += `**💎 Hidden gems** — ${lowViewHighConvert.length} posts got low views but high conversions.\n`;
+        report += `The CTA on these posts is working. Reuse that CTA with stronger hooks.\n`;
+        for (const g of lowViewHighConvert) {
+          report += `- "${g.text.substring(0, 50)}..." — ${g.views} views, ${g.conversions} conversions (CTA: ${g.cta || 'unknown'})\n`;
+        }
+        report += '\n';
+      }
+    }
   }
 
   // ==========================================

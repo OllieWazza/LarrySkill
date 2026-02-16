@@ -7,7 +7,7 @@ description: Automate TikTok slideshow marketing for any app or product. Researc
 
 Automate your entire TikTok slideshow marketing pipeline: generate → overlay → post → track → iterate.
 
-**Proven results:** 300K+ views in 48 hours, 100+ paying subscribers from TikTok alone.
+**Proven results:** 7 million views on the viral X article, 1M+ TikTok views, $670/month MRR — all from an AI agent running on an old gaming PC.
 
 ## Prerequisites
 
@@ -36,6 +36,31 @@ Postiz supports cross-posting to Instagram Reels, YouTube Shorts, Threads, Faceb
 When this skill is first loaded, IMMEDIATELY start a conversation with the user. Don't dump a checklist — talk to them like a human marketing partner would. The flow below is a guide, not a script. Be natural. Ask one or two things at a time. React to what they say. Build on their answers.
 
 **Important:** Use `scripts/onboarding.js --validate` at the end to confirm the config is complete.
+
+### Phase 0: TikTok Account Warmup (CRITICAL — Don't Skip This)
+
+Before anything else, check if the user already has a TikTok account with posting history. If they're creating a fresh account, they MUST warm it up first or TikTok will treat them like a bot and throttle their reach from day one.
+
+Explain this naturally:
+
+> "Quick question before we dive in — do you already have a TikTok account you've been using, or are we starting fresh? If it's new, we need to warm it up first. TikTok's algorithm watches how new accounts behave, and if you go straight from creating an account to posting AI slideshows, it flags you as a bot and kills your reach."
+
+**If the account is new or barely used, walk them through this:**
+
+The goal is to use TikTok like a normal person for **7-14 days** before posting anything. Spend **30-60 minutes a day** on the app:
+
+- **Scroll the For You page naturally.** Watch some videos all the way through. Skip others halfway. Don't watch every single one to the end — that's not how real people scroll.
+- **Like sparingly.** Maybe 1 in 10 videos. Don't like everything — that's bot behaviour. Only like things you'd genuinely engage with in your niche.
+- **Follow accounts in your niche.** If they're promoting a fitness app, follow fitness creators. Room design? Interior design accounts. This trains the algorithm to understand what the account is about.
+- **Watch niche content intentionally.** This is the most important part. TikTok learns what you engage with and starts showing you more of it. You want the For You page dominated by content similar to what you'll be posting.
+- **Leave a few genuine comments.** Not spam. Real reactions. A few per session.
+- **Maybe post 1-2 casual videos.** Nothing promotional. Just normal content that shows TikTok there's a real person behind the account.
+
+**The signal to look for:** When they open TikTok and almost every video on their For You page is in their niche, the account is warmed up. The algorithm understands them. NOW they can start posting.
+
+Tell the user: "I know two weeks feels like wasted time, but accounts that skip warmup consistently get 80-90% less reach on their first posts. Do the warmup. It's the difference between your first post getting 200 views and 20,000."
+
+**If the account is already active and established,** skip this entirely and move to Phase 1.
 
 ### Phase 1: Get to Know Their App (Conversational)
 
@@ -120,6 +145,12 @@ Let them pick. Get their API key. If they're unsure, recommend based on their ca
 
 Store in config as `imageGen` with provider, apiKey, and model.
 
+**If they pick OpenAI**, mention the Batch API:
+
+> "One thing worth knowing — OpenAI has a Batch API that's **50% cheaper** than real-time generation. Instead of generating slides on the spot, you submit them as a batch job and get results within 24 hours (usually much faster). It's perfect for pre-generating tomorrow's slides overnight. Same quality, half the cost. Want me to set that up?"
+
+If they're interested, store `"useBatchAPI": true` in `imageGen` config. The generate script supports both modes — real-time for quick iterations, batch for scheduled daily content.
+
 **Then — and this is critical — work through the image style with them.** Don't just use a generic prompt. Bad images = nobody watches. Ask these naturally, one or two at a time:
 
 > "Now let's figure out what these images should actually look like. Do you want them to look like real photos someone took on their phone, or more like polished graphics or illustrations?"
@@ -178,7 +209,7 @@ Walk them through connecting step by step:
 
 Explain the draft workflow:
 
-> "One important thing — posts go to your TikTok inbox as drafts, not straight to your feed. Before you publish each one, add a trending sound from TikTok's sound library. Music is the single biggest factor in TikTok reach — silent slideshows get buried. It takes 30 seconds per post and makes a massive difference. This workflow got us 300K+ views in 48 hours."
+> "One important thing — posts go to your TikTok inbox as drafts, not straight to your feed. Before you publish each one, add a trending sound from TikTok's sound library. Music is the single biggest factor in TikTok reach — silent slideshows get buried. It takes 30 seconds per post and makes a massive difference. This workflow helped us hit over 1 million TikTok views."
 
 **Don't move on until Postiz is connected and the API key works.** Test it by hitting the platform analytics endpoint. If it returns data, you're good.
 
@@ -561,7 +592,7 @@ Posts go to your TikTok inbox as drafts, NOT published directly. This is intenti
 3. **Posts without music get buried.** Silent slideshows look like ads and get skipped. A trending sound makes your content feel native.
 4. **Creative control.** You can preview the final slideshow with music before it goes live. If something looks off, fix it before publishing.
 
-This is the workflow that got us 300K+ views in 48 hours. Don't skip the music step.
+This is the workflow that helped us hit 1M+ TikTok views and $670/month MRR. Don't skip the music step.
 
 **Tell the user during onboarding:** "Posts will land in your TikTok inbox as drafts. Before publishing each one, add a trending sound from TikTok's library — this is the single biggest factor in reach. It takes 30 seconds and makes a massive difference."
 
@@ -675,14 +706,21 @@ This is the core intelligence. Two axes: **views** (are people seeing it?) and *
 - Test new hook categories from scratch
 - Reference competitor research for what's working for others
 
-**Consistently poor conversions across ALL hooks** → 🔴 APP ISSUE
-- If multiple high-view posts all have poor conversions, the problem isn't the content — it's downstream
-- Check the app's onboarding flow (is it confusing? too long? too short?)
-- Check the paywall (is it shown too early? too expensive? unclear value?)
-- Check the App Store page (does it match what the TikTok posts promise?)
-- Check if the "link in bio" actually works and goes to the right place
-- Consider A/B testing the paywall or onboarding before making more content
-- This is a signal to pause posting and fix the app experience first
+**High views + High downloads + Low paying subscribers** → 🔴 APP ISSUE
+- The marketing is working. People are watching AND downloading. But they're not paying.
+- This is NOT a content problem — the app onboarding, paywall, or pricing needs fixing.
+- Check: Is the paywall shown at the right time? Is the free experience too generous?
+- Check: Does the onboarding guide users to the "aha moment" before the paywall?
+- Check: Is the pricing right? Too expensive for the perceived value?
+- **This is a signal to pause posting and fix the app experience first**
+
+**High views + Low downloads** → 🟡 CTA ISSUE
+- People are watching but not downloading. The hooks work, the CTAs don't.
+- Rotate through different CTAs: "link in bio", "search on App Store", app name only, "free to try"
+- Check the App Store page — does it match what the TikTok shows?
+- Check that "link in bio" actually works and goes to the right place
+
+**The daily report automates all of this.** It cross-references TikTok views (Postiz) with downloads and revenue (RevenueCat) and tells you exactly which part of the funnel is broken — per post. It also auto-generates new hook suggestions based on your winning patterns and flags when CTAs need rotating.
 
 ### Hook Evolution
 
@@ -692,20 +730,46 @@ Track in `tiktok-marketing/hook-performance.json`:
 {
   "hooks": [
     {
+      "postId": "postiz-id",
       "text": "My boyfriend said our flat looks like a catalogue",
-      "category": "person-conflict-ai",
-      "attempts": 3,
-      "avgViews": 45000,
-      "avgConversions": 4,
-      "status": "winner"
+      "app": "snugly",
+      "date": "2026-02-15",
+      "views": 45000,
+      "likes": 1200,
+      "comments": 45,
+      "shares": 89,
+      "conversions": 4,
+      "cta": "Download Snugly — link in bio",
+      "lastChecked": "2026-02-16"
+    }
+  ],
+  "ctas": [
+    {
+      "text": "Download [App] — link in bio",
+      "timesUsed": 5,
+      "totalViews": 120000,
+      "totalConversions": 8,
+      "conversionRate": 0.067
+    },
+    {
+      "text": "Search [App] on the App Store",
+      "timesUsed": 3,
+      "totalViews": 85000,
+      "totalConversions": 12,
+      "conversionRate": 0.141
     }
   ],
   "rules": {
-    "doubleDown": ["person-conflict-ai", "landlord-hooks"],
+    "doubleDown": ["person-conflict-ai"],
     "testing": ["listicle", "pov-format"],
     "dropped": ["self-complaint", "price-comparison"]
   }
 }
+```
+
+**The daily report updates this automatically.** Each post gets tagged with its hook text, CTA, view count, and attributed conversions. Over time, this builds a clear picture of which hook + CTA combinations actually drive revenue — not just views.
+
+**CTA rotation:** When the report detects high views but low conversions, it automatically recommends rotating to a different CTA and tracks performance of each CTA separately. The agent should tag every post with the CTA used so the data accumulates.
 ```
 
 **Decision rules:**
