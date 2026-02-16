@@ -375,18 +375,71 @@ The script auto-routes to the correct provider based on `config.imageGen.provide
 
 ### 2. Add Text Overlays
 
-Use `scripts/add-text-overlay.js`:
+**Use the OpenClaw `canvas` tool** to render text overlays. This is the recommended method — it works on every OpenClaw agent with zero dependencies. Render an HTML/CSS overlay on top of each slide image.
 
-```bash
-node scripts/add-text-overlay.js --input tiktok-marketing/posts/YYYY-MM-DD-HHmm/ --texts texts.json
+**How to use the canvas tool for overlays:**
+
+1. For each slide, present a canvas with the slide image as background and HTML text overlay:
+
+```javascript
+// Example: use canvas tool to render overlay
+// 1. Present canvas with HTML containing the background image + text
+// 2. Snapshot the canvas to get the final composited image
+// 3. Save the result
 ```
 
-Uses `node-canvas` to render text directly onto slide images. All dimensions are relative to image size so they work at any resolution.
+The agent should build an HTML page for each slide that:
+- Sets the slide image as a full-bleed background (`background-image`, `background-size: cover`)
+- Overlays styled text using CSS (much more control than any script)
+- Snapshots the canvas to produce the final image
 
-**Text overlay spec:**
-- **Font size:** 6.5% of image width (~66px on 1024w)
-- **Position:** Centered horizontally, centered vertically around 30% from top
-- **Style:** White fill (`#FFFFFF`) with thick black outline (15% of font size)
+**Example HTML for a slide overlay:**
+```html
+<div style="
+  width: 1024px;
+  height: 1536px;
+  background-image: url('file:///path/to/slide1_raw.png');
+  background-size: cover;
+  position: relative;
+">
+  <div style="
+    position: absolute;
+    top: 25%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    max-width: 75%;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    font-size: 66px;
+    color: white;
+    text-shadow:
+      -3px -3px 0 #000, 3px -3px 0 #000,
+      -3px 3px 0 #000, 3px 3px 0 #000,
+      0 0 8px rgba(0,0,0,0.5);
+    line-height: 1.25;
+  ">
+    I showed my landlord<br>
+    what AI thinks our<br>
+    kitchen should look like
+  </div>
+</div>
+```
+
+Then snapshot the canvas to save as the final slide image.
+
+**Why canvas over a script:**
+- Zero npm dependencies — works on every OpenClaw agent immediately
+- Full CSS control — shadows, gradients, multiple font sizes, emphasis words
+- Easy to preview before committing — present the canvas, check it looks right, adjust
+- Can use **bold/italic/color on individual words** (e.g. "ABSOLUMENT" in caps, different size)
+
+**Fallback:** If the canvas tool is unavailable, `scripts/add-text-overlay.js` works but requires `npm install canvas` (which needs native cairo/pango libs).
+
+**Text overlay spec (same rules regardless of method):**
+- **Font size:** ~6.5% of image width (~66px on 1024w)
+- **Position:** Centered horizontally, ~25-30% from top
+- **Style:** White fill with thick black outline/shadow
 - **Max width:** 75% of image (padding both sides for TikTok UI)
 - **Safe zones:** No text in bottom 20% (TikTok controls) or top 10% (status bar)
 - **Content:** Text must be REACTIONS not labels ("Wait... this is actually nice??" not "Modern minimalist")
