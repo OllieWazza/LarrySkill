@@ -11,10 +11,25 @@ Automate your entire TikTok slideshow marketing pipeline: generate → overlay �
 
 ## Prerequisites
 
-- **Node.js** (v18+)
-- **node-canvas** — `npm install canvas` — used for text overlays on slide images. May require native build tools on some systems (see [node-canvas install guide](https://github.com/Automattic/node-canvas#compiling))
-- An image generation API key (OpenAI, Stability AI, Replicate, or bring your own images)
-- A Postiz account for TikTok posting
+This skill does NOT bundle any dependencies. Your AI agent will need to research and install the following based on your setup. Tell your agent what you're working with and it will figure out the rest.
+
+### Required
+- **Node.js** (v18+) — all scripts run on Node. Your agent should verify this is installed and install it if not.
+- **node-canvas** (`npm install canvas`) — used for adding text overlays to slide images. This is a native module that may need build tools (Python, make, C++ compiler) on some systems. Your agent should research the install requirements for your OS.
+- **Postiz** — the tool that connects to TikTok (and 28+ other platforms) for posting and analytics. You'll need an account and API key. Sign up below.
+
+### Image Generation (pick one)
+You choose what generates your images. Your agent should research the API docs for whichever you pick:
+- **OpenAI** — `gpt-image-1.5` or `dall-e-3`. Needs an OpenAI API key. Best for realistic photo-style images.
+- **Stability AI** — Stable Diffusion XL and newer. Needs a Stability AI API key. Good for stylized/artistic images.
+- **Replicate** — run any open-source model (Flux, SDXL, etc.). Needs a Replicate API token. Most flexible.
+- **Local** — bring your own images. No API needed. Place images in the output directory and the script skips generation.
+
+### Conversion Tracking (optional, mobile apps only)
+- **RevenueCat** — tracks subscribers, MRR, trials, churn. If you have a mobile app with in-app purchases, this closes the loop between TikTok views and actual revenue. There's a dedicated RevenueCat skill on ClaWHub (`clawhub install revenuecat`) that gives your agent full API access. There's also a **RevenueCat MCP** for direct control over products and offerings from your agent/IDE — your agent should research this if you want programmatic control over your RevenueCat project.
+
+### Cross-Posting (optional, recommended)
+Postiz supports cross-posting to Instagram Reels, YouTube Shorts, Threads, Facebook, LinkedIn, and 20+ more platforms simultaneously. Your agent should research which platforms fit your audience and connect them in Postiz. Same content, different algorithms, more reach.
 
 ## First Run — Onboarding
 
