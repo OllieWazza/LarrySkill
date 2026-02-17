@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Post a 6-slide TikTok slideshow via Postiz API.
+ * Post a 6-slide TikTok slideshow via official Postiz CLI.
  * 
  * Usage: node post-to-tiktok.js --config <config.json> --dir <slides-dir> --caption "caption text" --title "post title"
  * 
@@ -10,6 +10,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const { runPostiz } = require('./postiz-cli');
 
 const args = process.argv.slice(2);
 function getArg(name) {
@@ -28,19 +30,30 @@ if (!configPath || !dir || !caption) {
 }
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-const BASE_URL = 'https://api.postiz.com/public/v1';
+const tiktokIntegrationId = config.postiz?.integrationIds?.tiktok || config.postiz?.integrationId;
+if (!tiktokIntegrationId) {
+  console.error('Missing TikTok integration ID. Set config.postiz.integrationIds.tiktok');
+  process.exit(1);
+}
 
 async function uploadImage(filePath) {
-  const form = new FormData();
-  const blob = new Blob([fs.readFileSync(filePath)], { type: 'image/png' });
-  form.append('file', blob, path.basename(filePath));
+  return runPostiz(['upload', filePath], config);
+}
 
-  const res = await fetch(`${BASE_URL}/upload`, {
-    method: 'POST',
-    headers: { 'Authorization': config.postiz.apiKey },
-    body: form
-  });
-  return res.json();
+async function createPost(payload) {
+  const tmpPath = path.join(
+    os.tmpdir(),
+    `postiz-create-${Date.now()}-${Math.random().toString(36).slice(2)}.json`
+  );
+
+  try {
+    fs.writeFileSync(tmpPath, JSON.stringify(payload));
+    return await runPostiz(['posts:create', '--json', tmpPath], config);
+  } finally {
+    if (fs.existsSync(tmpPath)) {
+      fs.unlinkSync(tmpPath);
+    }
+  }
 }
 
 (async () => {
@@ -67,44 +80,38 @@ async function uploadImage(filePath) {
   console.log('\n📱 Creating TikTok post...');
   const privacy = config.posting?.privacyLevel || 'SELF_ONLY';
   
-  const postRes = await fetch(`${BASE_URL}/posts`, {
-    method: 'POST',
-    headers: {
-      'Authorization': config.postiz.apiKey,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      type: 'now',
-      date: new Date().toISOString(),
-      shortLink: false,
-      tags: [],
-      posts: [{
-        integration: { id: config.postiz.integrationId },
-        value: [{ content: caption, image: images }],
-        settings: {
-          __type: 'tiktok',
-          title: title,
-          privacy_level: privacy,
-          duet: false,
-          stitch: false,
-          comment: true,
-          autoAddMusic: 'no',
-          brand_content_toggle: false,
-          brand_organic_toggle: false,
-          video_made_with_ai: true,
-          content_posting_method: 'UPLOAD'
-        }
-      }]
-    })
+  const postRes = await createPost({
+    type: 'now',
+    date: new Date().toISOString(),
+    shortLink: false,
+    tags: [],
+    posts: [{
+      integration: { id: tiktokIntegrationId },
+      value: [{ content: caption, image: images }],
+      settings: {
+        __type: 'tiktok',
+        title: title,
+        privacy_level: privacy,
+        duet: false,
+        stitch: false,
+        comment: true,
+        autoAddMusic: 'no',
+        brand_content_toggle: false,
+        brand_organic_toggle: false,
+        video_made_with_ai: true,
+        content_posting_method: 'UPLOAD'
+      }
+    }]
   });
 
-  const result = await postRes.json();
+  const result = postRes;
   console.log('✅ Posted!', JSON.stringify(result));
 
   // Save metadata
   const metaPath = path.join(dir, 'meta.json');
+  const firstPost = Array.isArray(result) ? result[0] : null;
   const meta = {
-    postId: result[0]?.postId,
+    postId: firstPost?.postId || firstPost?.id || null,
     caption,
     title,
     privacy,

@@ -2,13 +2,14 @@
 /**
  * TikTok Analytics Checker
  * 
- * Connects Postiz posts to their TikTok video IDs and pulls per-post analytics.
+ * Connects Postiz posts to their TikTok video IDs and pulls per-post analytics
+ * using the official Postiz CLI.
  * 
  * How it works:
  * 1. Fetches all Postiz posts in the date range
- * 2. For posts with releaseId="missing", calls /posts/{id}/missing to get TikTok video list
+ * 2. For posts with releaseId="missing", calls posts:missing to get TikTok video list
  * 3. Matches posts to videos chronologically (TikTok IDs are sequential: higher = newer)
- * 4. Connects each post to its TikTok video via PUT /posts/{id}/release-id
+ * 4. Connects each post to its TikTok video via posts:connect
  * 5. Pulls per-post analytics (views, likes, comments, shares)
  * 
  * IMPORTANT: TikTok's API takes 1-2 hours to index new videos. Don't run this
@@ -25,6 +26,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { runPostiz } = require('./postiz-cli');
 
 const args = process.argv.slice(2);
 function getArg(name) {
@@ -43,17 +45,24 @@ if (!configPath) {
 }
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-const BASE_URL = 'https://api.postiz.com/public/v1';
-const API_KEY = config.postiz.apiKey;
 
-async function api(method, endpoint, body = null) {
-  const opts = {
-    method,
-    headers: { 'Authorization': API_KEY, 'Content-Type': 'application/json' }
-  };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(`${BASE_URL}${endpoint}`, opts);
-  return res.json();
+async function listPosts(startDate, endDate) {
+  return runPostiz(
+    ['posts:list', '--startDate', startDate.toISOString(), '--endDate', endDate.toISOString()],
+    config
+  );
+}
+
+async function getMissing(postId) {
+  return runPostiz(['posts:missing', postId], config);
+}
+
+async function connectPost(postId, releaseId) {
+  return runPostiz(['posts:connect', postId, '--release-id', releaseId], config);
+}
+
+async function getPostAnalytics(postId) {
+  return runPostiz(['analytics:post', postId, '--date', String(days)], config);
 }
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -67,7 +76,7 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   console.log(`📊 Checking analytics (last ${days} days, cutoff: posts before ${cutoffDate.toISOString().slice(11, 16)} UTC)\n`);
 
   // 1. Get all posts in range
-  const postsData = await api('GET', `/posts?startDate=${startDate.toISOString()}&endDate=${now.toISOString()}`);
+  const postsData = await listPosts(startDate, now);
   let posts = postsData.posts || [];
 
   // Filter by app if specified
@@ -104,7 +113,7 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
     // Use the first unconnected post to get the missing list
     const referencePost = connectableUnconnected[0];
     console.log(`🔍 Fetching TikTok video list via post ${referencePost.id}...`);
-    const tiktokVideos = await api('GET', `/posts/${referencePost.id}/missing`);
+    const tiktokVideos = await getMissing(referencePost.id);
 
     if (Array.isArray(tiktokVideos) && tiktokVideos.length > 0) {
       // TikTok IDs are sequential (higher = newer). Sort ascending.
@@ -138,7 +147,7 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
         console.log(`     Post: ${post.id} (${post.publishDate})`);
         console.log(`     TikTok: ${videoId}`);
 
-        const result = await api('PUT', `/posts/${post.id}/release-id`, { releaseId: videoId });
+        const result = await connectPost(post.id, videoId);
         if (result.releaseId === videoId) {
           console.log(`     ✅ Connected`);
         } else {
@@ -158,7 +167,7 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   console.log('📈 Per-Post Analytics:\n');
   
   // Re-fetch posts to get updated release IDs
-  const updatedData = await api('GET', `/posts?startDate=${startDate.toISOString()}&endDate=${now.toISOString()}`);
+  const updatedData = await listPosts(startDate, now);
   let updatedPosts = (updatedData.posts || []).filter(p => 
     p.integration?.providerIdentifier === 'tiktok' &&
     p.releaseId && p.releaseId !== 'missing'
@@ -170,7 +179,7 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   const results = [];
   for (const post of updatedPosts) {
-    const analytics = await api('GET', `/analytics/post/${post.id}`);
+    const analytics = await getPostAnalytics(post.id);
     const metrics = {};
     if (Array.isArray(analytics)) {
       analytics.forEach(m => {

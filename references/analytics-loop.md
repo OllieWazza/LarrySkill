@@ -2,12 +2,25 @@
 
 ## Performance Tracking
 
-### Postiz Analytics API
+### Postiz CLI (Hosted + Self-Hosted)
+
+Use the official `postiz` CLI for all Postiz calls.
+
+Required env:
+```bash
+export POSTIZ_API_KEY=your_postiz_api_key
+```
+
+Optional for self-hosted:
+```bash
+export POSTIZ_API_URL=https://postiz.yourdomain.com
+```
+
+The scripts in this skill set these env vars automatically from `config.postiz.apiKey` and optional `config.postiz.apiUrl`.
 
 **Platform analytics** (followers, views, likes, comments, shares over time):
 ```
-GET https://api.postiz.com/public/v1/analytics/{integrationId}
-Authorization: {apiKey}
+postiz analytics:platform {integrationId} --date 7
 ```
 
 Response:
@@ -25,8 +38,7 @@ Response:
 
 **Per-post analytics** (likes, comments per post):
 ```
-GET https://api.postiz.com/public/v1/analytics/post/{postId}
-Authorization: {apiKey}
+postiz analytics:post {postId} --date 7
 ```
 
 Response:
@@ -41,8 +53,13 @@ Note: Per-post analytics availability depends on the platform. TikTok may return
 
 **List posts** (to get post IDs for analytics):
 ```
-GET https://api.postiz.com/public/v1/posts?startDate={ISO}&endDate={ISO}
-Authorization: {apiKey}
+postiz posts:list --startDate {ISO} --endDate {ISO}
+```
+
+**Connect missing release IDs**:
+```bash
+postiz posts:missing {postId}
+postiz posts:connect {postId} --release-id {tiktokVideoId}
 ```
 
 ### RevenueCat Integration (Optional)
@@ -124,7 +141,7 @@ Output: tiktok-marketing/reports/YYYY-MM-DD.md
 ```
 
 The daily report:
-1. Fetches all posts from the last 3 days via Postiz API
+1. Fetches all posts from the last 3 days via Postiz CLI
 2. Pulls per-post analytics (views, likes, comments, shares)
 3. If RevenueCat is connected, pulls conversion events (trials, purchases) in the same window
 4. Cross-references: maps conversion timestamps to post publish times (24-72h attribution window)
