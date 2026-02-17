@@ -83,8 +83,8 @@ Then FOLLOW UP based on what they say. Don't ask all 9 questions at once. Pull t
 > "Is this a mobile app? And do you use RevenueCat (or any subscription/in-app purchase system) to handle payments?"
 
 This is critical because it determines whether we can close the full feedback loop. If they have a mobile app with RevenueCat:
-- **Immediately install the RevenueCat skill:** Ask your agent to install it from ClawHub. This gives full API access to subscribers, MRR, trials, churn, revenue, and transactions.
-- **This is NOT optional for app developers.** Without RevenueCat data, the skill can only optimize for views (vanity metrics). With it, the skill optimizes for actual paying users. The difference is massive. A post with 200K views and zero conversions is worthless. A post with 5K views and 10 paid subscribers is gold. You can only tell the difference with RevenueCat connected.
+- **Tell them about the RevenueCat skill on ClawHub** (`clawhub install revenuecat`). It gives full API access to subscribers, MRR, trials, churn, revenue, and transactions. Don't auto-install — just let them know it exists and what it unlocks, and they can install it if they want.
+- **Explain why it matters:** Without RevenueCat data, the skill can only optimize for views (vanity metrics). With it, the skill optimizes for actual paying users. The difference is massive. A post with 200K views and zero conversions is worthless. A post with 5K views and 10 paid subscribers is gold. You can only tell the difference with RevenueCat connected.
 
 If they don't use RevenueCat but have another subscription system, note it and work with what's available. If it's not a mobile app (e.g. physical product, SaaS, service), skip RevenueCat but still track whatever conversion metric they have (website signups, purchases, leads).
 
